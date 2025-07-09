@@ -24,6 +24,10 @@
 #' Univariate Inference for Longitudinal Functional Models. \emph{Journal of
 #' Computational and Graphical Statistics}, 31(1), 219-230.
 #'
+#' @references Loewinger, G., Cui, E., Lovinger, D., Pereira, F. (2024). A 
+#' Statistical Framework for Analysis of Trial-Level Temporal Dynamics in 
+#' Fiber Photometry Experiments. \emph{eLife}, 95802.
+#'
 #' @export
 #'
 #' @import ggplot2
@@ -123,6 +127,8 @@ plot_fui <- function(fuiobj,
     y_range_up <- diff(ylimit) * 0.02
 
     # extend upper limit
+    ylimit.max <- max(ylimit) # find largest
+    if(ylimit.max < 0)  y_val_lim <- 1 / y_val_lim # if negative, need to adjust rescaling factor
     y_val_lim_vec <- c(1, y_val_lim)
     y_top <- (0.975) * diff(ylimit*y_val_lim_vec) + ylimit[1]*y_val_lim_vec[1]
     plot_list[[r]] <- plot_list[[r]] + coord_cartesian(ylim = ylimit*y_val_lim_vec,
