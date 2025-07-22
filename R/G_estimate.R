@@ -42,7 +42,7 @@ G_estimate.fastFMM <- function(
   fmm, mum, betaHat, HHat, non_neg, MoM, silent
 ) {
   if(silent == FALSE)
-    print("Step 3.1.1: Method of Moments Covariance Estimator")
+    message("Step 3.1.1: Method of Moments Covariance Estimator")
 
   data <- fmm$data
   L <- length(fmm$argvals)
@@ -181,7 +181,7 @@ G_estimate.fastFMMconc <- function(
   fmm, mum, betaHat, HHat, non_neg, MoM, silent
 ) {
   if(silent == FALSE)
-    print("Step 3.1.1: Method of Moments Covariance Estimator")
+    message("Step 3.1.1: Method of Moments Covariance Estimator")
 
   # Dummy
   data <- fmm$data
@@ -209,8 +209,11 @@ G_estimate.fastFMMconc <- function(
     for(j in i:L){
       YYj <- YYi * (d_temp[, j] - designmat[[j]] %*% betaHat[, j]) # outcome of product of residuals
       data_cov <- G_generate(fmm, mum, i, j)
+      # browser()
       XTXX <- as.matrix(tcrossprod(MASS::ginv(as.matrix(crossprod(data_cov$Z))), data_cov$Z))
-
+      # AX: Test for numerical problems with generalized inverse
+      # XTXX <- as.matrix(solve(as.matrix(crossprod(data_cov$Z)), t(data_cov$Z)))
+      
       bHat <- XTXX %*% YYj  # coefficients from OLS with pseudo-inverse
       GTilde[, i, j] <- GTilde[, j, i] <- sapply(
         idx_lst, function(x) mean(bHat[x])
@@ -290,7 +293,7 @@ cov_nnls <- function(
 
   if (non_neg == 1) {
 
-    if(silent == FALSE) print("Step 3.1.2: NNLS 1")
+    if(silent == FALSE) message("Step 3.1.2: NNLS 1")
 
     # put constraints on EVERY coef corresponding to columns for one random effect
     ncol_Z <- ncol(data_cov$Z)
@@ -320,7 +323,7 @@ cov_nnls <- function(
     }
 
   } else if(non_neg == 2) {
-    if(silent == FALSE) print("Step 3.1.2: NNLS 2")
+    if(silent == FALSE) message("Step 3.1.2: NNLS 2")
 
     # put constraints on AVERAGE over coefs corresponding to columns for one random effect
     ncol_Z <- ncol(data_cov$Z)

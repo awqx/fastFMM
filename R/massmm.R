@@ -51,7 +51,7 @@ massmm.fastFMM <- function(fmm, parallel, n_cores) {
     randeffs <- suppressMessages(
       simplify2array(
         lapply(
-          lapply(massmm, '[[', 'randeffs'),
+          lapply(mass_list, '[[', 'randeffs'),
           function(x) as.matrix(x[[1]])
         )
       )
@@ -158,7 +158,7 @@ massmm.fastFMMconc <- function(fmm, parallel, n_cores) {
     randeffs <- suppressMessages(
       simplify2array(
         lapply(
-          lapply(massmm, '[[', 'randeffs'),
+          lapply(mass_list, '[[', 'randeffs'),
           function(x) as.matrix(x[[1]])
         )
       )

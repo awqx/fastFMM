@@ -11,7 +11,9 @@ rebuild_0.Rmd
 demo.Rmd
 fui_conc.Rmd
 *oop.R
-data/
+data/hidden/
 *tar.gz
 *rebuild.R
 *_conc.*
+fastFMM-vignette-ref.Rmd
+inst/doc

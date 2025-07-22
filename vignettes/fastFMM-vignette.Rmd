@@ -1,6 +1,6 @@
 ---
 title: "fastFMM Vignette: Fast Functional Mixed Models using Fast Univariate Inference"
-author: Gabriel Loewinger, Erjia Cui
+author: Gabriel Loewinger, Erjia Cui, Alison W Xin
 # - National Institute of Mental Health (NIH), University of Minnesota
 date: "`r Sys.Date()`"
 output:
@@ -19,31 +19,31 @@ output: pdf_document
 # output: rmarkdown::html_vignette
 ```
 
-```{r echo = FALSE}
+```{r chunk settings, echo = FALSE}
 # Thanks to Yihui Xie for providing this code
-# #  %\VignetteEngine{knitr::rmarkdown} 
-# %\VignetteEngine{rmarkdown::render}
 library(knitr)
 hook_output <- knit_hooks$get("output")
-knit_hooks$set(output = function(x, options) {
-   lines <- options$output.lines
-   if (is.null(lines)) {
+knit_hooks$set(
+  output = function(x, options) {
+    lines <- options$output.lines
+    if (is.null(lines)) {
      return(hook_output(x, options))  # pass to default hook
-   }
-   x <- unlist(strsplit(x, "\n"))
-   more <- "..."
-   if (length(lines)==1) {        # first n lines
+    }
+    x <- unlist(strsplit(x, "\n"))
+    more <- "..."
+    if (length(lines)==1) {        # first n lines
      if (length(x) > lines) {
        # truncate the output, but add ....
        x <- c(head(x, lines), more)
      }
-   } else {
+    } else {
      x <- c(more, x[lines], more)
-   }
-   # paste these lines together
-   x <- paste(c(x, ""), collapse = "\n")
-   hook_output(x, options)
- })
+    }
+    # paste these lines together
+    x <- paste(c(x, ""), collapse = "\n")
+    hook_output(x, options)
+  }
+)
 ```
 
 # Introduction
@@ -55,7 +55,9 @@ $$
   & Y_{ij}(s) \sim EF\{\mu_{ij}(s)\}, \\
   & g\{\mu_{ij}(s)\} = \eta_{ij}(s) = \boldsymbol{X}_{ij}^T\boldsymbol{\beta}(s) + \boldsymbol{Z}_{ij}^T\boldsymbol{u}_i(s).
 \end{aligned} 
-$$ The model above is also called Functional Mixed Model (FMM) in the Functional Data Analysis (FDA) literature. Many statistical methods have been proposed to fit this model, which in general fall into two categories: joint methods and marginal methods. FUI is a marginal method that is computationally fast and achieves similar estimation accuracy compared with the state-of-the-art joint method, such as the `refund::pffr()` function.
+$$ 
+
+The model above is also called Functional Mixed Model (FMM) in the Functional Data Analysis (FDA) literature. Many statistical methods have been proposed to fit this model, which in general fall into two categories: joint methods and marginal methods. FUI is a marginal method that is computationally fast and achieves similar estimation accuracy compared with the state-of-the-art joint method, such as the `refund::pffr()` function.
 
 FUI consists of the following three steps:
 

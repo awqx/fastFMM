@@ -1,0 +1,97 @@
+---
+title: "fastFMM: Functional mixed models with fast univariate inference"
+output: rmarkdown::html_vignette
+author: Gabriel Loewinger, Erjia Cui, Alison W Xin
+date: "`r Sys.Date()`"
+vignette: >
+  %\VignetteIndexEntry{fastFMM}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r preamble, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+```{r setup}
+library(fastFMM)
+```
+
+## Introduction
+
+`fastFMM` is a toolkit for fitting functional mixed models (FMMs) and implements the fast univariate inference (FUI) method proposed in [Cui et al. (2022)](https://doi.org/10.1080/10618600.2021.1950006). In this vignette, we provide a tutorial on how to use the `fui` function to fit non-concurrent and concurrent FMMs. 
+
+### Installation
+
+While `fastFMM` is available on CRAN, the development version of the package can be downloaded from [GitHub](https://github.com/awqx/fastFMM):
+
+```{r, eval = FALSE}
+if (!require("devtools")) install.packages("devtools")
+devtools::install_github("awqx/fastFMM", dependencies = T)
+```
+
+### Fast univariate inference (FUI)
+
+Let $Y_{i, j} (s)$ be observations of multi-level/longitudinal functional data on the compact functional domain $\mathcal{S} = \{s_1, s_2, \dots, s_L\}$. We denote $i = 1, 2, ..., I$ the index of the subject and $j = 1, 2, ..., J_i$ the index of longitudinal visit at time $t_{i, j}$. For each visit of each subject, we observe the fixed effects column vector $\mathbf{X}_{i, j} = [X_{i, j, 1}, X_{i, j, 2}, \dots, X_{i, j, p}]^T \in \mathbb{R}^p$ and the random effects column vector $\mathbf{Z}_{ij} = [Z_{i, j, 1}, Z_{i, j, 2}, ..., Z_{i, j, q}]^T \in \mathbb{R}^q$. Let $g(\cdot)$ be some pre-specified link function and $EF(\cdot)$ be some exponential family distribution. A longitudinal function-on-scalar regression model has the form
+
+$$
+\begin{aligned} 
+  & Y_{ij}(s) \sim EF\{\mu_{ij}(s)\}, \\
+  & g\{\mu_{ij}(s)\} = \eta_{ij}(s) = \boldsymbol{X}_{ij}^T\boldsymbol{\beta}(s) + \boldsymbol{Z}_{ij}^T\boldsymbol{u}_i(s),
+\end{aligned} 
+$$ 
+
+referred to as a functional mixed model (FMM) in the functional data analysis (FDA) literature. Many statistical methods have been proposed to fit FMMs, and generally fall into two categories: joint methods and marginal methods. FUI is a marginal method that is computationally fast and achieves similar estimation accuracy compared with the state-of-the-art joint method, such as the `refund::pffr()` function.
+
+FUI consists of the following three steps:
+
+1. *Fit univariate models*. Fit separate linear mixed models at every point along the functional domain $\mathcal{S}$. That is, at each location $s_l \in \mathcal{S}, l = 1, 2, ..., L$,  we fit a pointwise generalized linear mixed model (GLMM) of the form
+$$
+\begin{aligned} 
+  & Y_{i, j}(s_l) \sim EF\{\mu_{i,j}(s_l)\}, \\
+  & g\{\mu_{i, j}(s_l)\} = \eta_{i,j}(s_l) = \boldsymbol{X}_{i,j}^T\boldsymbol{\beta}(s_l) + \boldsymbol{Z}_{i,j}^T\boldsymbol{u}_i(s_l),
+\end{aligned}
+$$ 
+where $\boldsymbol{\beta}(s_l)$ is a $p \times 1$ dimensional vector of fixed effects and $\boldsymbol{u}_i(s_l)$ is a $q \times 1$ dimensional vector of random effects. Let $\boldsymbol{\tilde{\beta}}(s_1), \boldsymbol{\tilde{\beta}}(s_2), ..., \boldsymbol{\tilde{\beta}}(s_L)$ be the estimates of fixed effects from $L$ separate univariate GLMMs.
+
+2. *Smooth coefficients*. Using penalized splines, aggregate and smooth the coefficient estimates $\boldsymbol{\tilde{\beta}}(s_1), \boldsymbol{\tilde{\beta}}(s_2), ..., \boldsymbol{\tilde{\beta}}(s_L)$ to produce estimates $\{\boldsymbol{\hat{\beta}}(s), s \in \mathcal{S}\}$. 
+3. *Build pointwise and joint confidence intervals*. Combine the within-timepoint variance and the between-timepoint covariance to create confidence bands around the smoothed estimates from Step 2. For Gaussian data, we can obtain these estimates analytically. For other distributions, we implement cluster bootstrap. 
+
+FUI decomposes the complex correlation structure into longitudinal and functional directions, allowing for a computationally efficient estimation procedure. For more details on the analytic and bootstrap approach, refer to [Cui et al. (2022)](https://doi.org/10.1080/10618600.2021.1950006).
+
+### Additional references
+
+We describe applications of `fastFMM` to photometry signal analysis in [Loewinger et al. (2024)](https://doi.org/10.7554/eLife.95802.2) and Xin et al. (2025). In Loewinger et al. (2024), we detailed advantages of functional mixed modeling over conventional photometry analysis methods, including the ability to generate hypothesis tests at every trial timepoint, incorporate the photometry signal for every animal and trial, capture nested effects, and compare temporal dynamics. In Xin et al. (2025), we focused on the extension of the FUI method to concurrent FMMs and described particular cases where concurrent FMMs produce more interpretable coefficient estimates.
+
+## Reading data
+
+The function `fastFMM::fui` requires that data be presented in a long format, i.e., columns correspond to locations on the functional domain $1, 2, \dots, L$ and rows correspond to longitudinal observations $t_{i, j}$. For example, within `fastFMM`, we provide the pre-formatted dataset `lick`, sourced from [Jeong et al. (2022)](https://doi.org/10.1126/science.abq6740). 
+
+```{r read lick}
+lick <- read.csv("../data/lick.csv")
+```
+
+The columns `id, session, trial` correspond to trial-level covariates. The functional outcome of `photometry` is stored in the columns `photometry_1, photometry_2, ..., photometry_50` and the functional covariate `lick` is stored in the columns `lick_1, lick_2, ..., lick_50`.
+
+Alternatively, functional outcomes and covariates can be stored `AsIs` as matrix columns. 
+
+```{r lick asis}
+library(dplyr)
+lick_asis <- lick %>%
+  mutate(
+    photometry = AsIs(dplyr::select(lick, photometry_1:photometry_50))
+  ) %>%
+  select(-photometry_1:-photometry_50, -lick_1:-lick_50)
+```
+
+
+In the remainder of this tutorial, we will continue to use the original data frame `lick`. 
+
+## Non-concurrent FMM fitting
+
+### Data formatting
+
+

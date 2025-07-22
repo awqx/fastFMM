@@ -39,8 +39,8 @@ var_analytic <- function(
   # 0 Preparation of H, R #####################################################
 
   # Variance estimates of random components: H(s), R(s)
-  if (!silent) print("Step 3: Inference (Analytic)")
-  if (!silent) print("Step 3.0: Preparation")
+  if (!silent) message("Step 3: Inference (Analytic)")
+  if (!silent) message("Step 3.0: Preparation")
 
   # Source variables
   betaHat <- smoothed$betaHat
@@ -74,13 +74,13 @@ var_analytic <- function(
     GTilde <- G_estimate_randint(fmm, designmat, betaHat, silent)
 
     if (!silent)
-      print("Step 3.1.1: Preparation A")
+      message("Step 3.1.1: Preparation A")
 
     diag(GTilde) <- HHat[1, ] # L x L matrix
     # Fast bivariate smoother
     # nknots_min
 
-    if (!silent) print("Step 3.1.2: Smooth G")
+    if (!silent) message("Step 3.1.2: Smooth G")
 
     GHat <- fbps_cov(
       GTilde,
@@ -95,7 +95,7 @@ var_analytic <- function(
 
     ## Runs if there are more random effects than the intercept
     if (!silent)
-      print("Step 3.1.1: Preparation B")
+      message("Step 3.1.1: Preparation B")
 
     # generate design matrix for G(s_1, s_2)
     # Method of Moments Linear Regression calculation
@@ -109,7 +109,7 @@ var_analytic <- function(
 
     # 1.2 Smooth G =============================================================
 
-    if (!silent) print("Step 3.1.2: Smooth G")
+    if (!silent) message("Step 3.1.2: Smooth G")
 
     ## smooth GHat
     GHat <- GTilde
@@ -127,7 +127,7 @@ var_analytic <- function(
 
   # 2 First step ###############################################################
 
-  if (!silent) print("Step 3.2: First step")
+  if (!silent) message("Step 3.2: First step")
 
   # Calculate the intra-location variance of betaTilde: Var(betaTilde(s))
 
@@ -182,23 +182,20 @@ var_analytic <- function(
           res_template = res_template
         ),
         warning = function(w) {
-          print(
-            paste0(
-              "Warning when parallelizing variance calculation:", "\n", w
-            )
+          message(
+            "Warning when parallelizing variance calculation:", "\n", w
           )
         },
         error = function(e) {
           stop(
-            paste0("Error when parallelizing variance calculations:", "\n", e)
+            "Error when parallelizing variance calculations:", "\n", e
           )
           stopCluster(cl)
         },
         finally = {
           stopCluster(cl)
           if (!silent)
-            print("Finished parallelized variance calculation.")
-
+            message("Finished parallelized variance calculation.")
         }
       )
     } else {
@@ -254,7 +251,7 @@ var_analytic <- function(
 
   # 2.1 First step =============================================================
 
-  if (!silent) print("Step 3.2.1: First step")
+  if (!silent) message("Step 3.2.1: First step")
 
   res_template <- resStart$v_list_template # index template
   template_cols <- ncol(res_template)
@@ -294,7 +291,7 @@ var_analytic <- function(
 
   # 3 Second step ##############################################################
 
-  if (!silent) print("Step 3.3: Second step")
+  if (!silent) message("Step 3.3: Second step")
 
   # Intermediate step for covariance estimate
   betaTilde_var_s <- array(NA, dim = c(L, L, p))
@@ -328,11 +325,13 @@ var_analytic <- function(
 
   # Obtain qn to construct joint CI
   qn <- rep(0, length = nrow(betaHat))
-  N <- 10000 ## sample size in simulation-based approach
-  zero_vec <- rep(0, length(betaHat[1,]))
+  # Number of samples to estimate c in confidence intervals in simulation
+  N <- 10000
+  # N <- 100000 ## sample size in simulation-based approach
+  zero_vec <- rep(0, length(betaHat[1, ]))
   set.seed(seed)
 
-  for(i in 1:length(qn)) {
+  for (i in 1:length(qn)) {
     Sigma <- betaHat_var[, , i]
     sqrt_Sigma <- sqrt(diag(Sigma))
     S_scl <- Matrix::Diagonal(x = 1 / sqrt_Sigma)
@@ -342,16 +341,19 @@ var_analytic <- function(
     un <- Rfast::rowMaxs(x_sample, value = TRUE)
     qn[i] <- stats::quantile(un, 0.95)
   }
-
+  
+  # # Alternate approach: t-distribution assumption instead of Normal
+  # if (!silent)
+  #   message("Assuming a t-distribution for confidence intervals.")
+  # AX: add as option later
+  
   # Decide whether to return design matrix or just set it to NULL
   # if (!design_mat) designmat <- NA
   if (!silent)
     message(
-      paste0(
-        "Complete!", "\n",
-        " - Use plot_fui() function to plot estimates.", "\n",
-        " - For more information, run the command:  ?plot_fui"
-      )
+      "Complete!", "\n",
+      " - Use plot_fui() function to plot estimates.", "\n",
+      " - For more information, run the command:  ?plot_fui"
     )
 
   return(
@@ -363,7 +365,7 @@ var_analytic <- function(
       betaTilde = mum$betaTilde,
       var_random = mum$var_random,
       designmat = mum$designmat,
-      residuals = mum$resids,
+      residuals = mum$residuals,
       H = HHat_trim,
       R = RHat,
       G = GTilde,
@@ -1027,11 +1029,11 @@ fbps_cov <- function(
         upper = upper[1]
       )
       if (fit$convergence>0) {
-        expression <- paste(
+        expression <- message(
           "Smoothing failed! The code is:",
           fit$convergence
         )
-        print(expression)
+        message(expression)
       }
       lambda <- exp(fit$par)
     } ## end of optim

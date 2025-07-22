@@ -14,7 +14,7 @@
 #' }
 #'
 #' For more information on each step, please refer to the FUI paper
-#' by Cui et al. (2022). For more information on the method of moments estimator 
+#' by Cui et al. (2022). For more information on the method of moments estimator
 #' applied in step 3, see Loewinger et al. (2024).
 #'
 #' @param formula Two-sided formula object in lme4 formula syntax.
@@ -77,6 +77,8 @@
 #' fitting if columns have zero variance. Suggested for cases where individual
 #' columns have zero variance but interactions have non-zero variance. Defaults
 #' to `FALSE`.
+#' @param unsmooth Logical, indicates whether to return the raw estimates of
+#' coefficients and variances without smoothing. Defaults to `FALSE`.
 #'
 #' @return A list containing:
 #' \item{betaHat}{Estimated functional fixed effects}
@@ -92,9 +94,8 @@
 #' @references Cui, E., Leroux, A., Smirnova, E., Crainiceanu, C. (2022). Fast
 #' Univariate Inference for Longitudinal Functional Models. \emph{Journal of
 #' Computational and Graphical Statistics}, 31(1), 219-230.
-#'
-#' @references Loewinger, G., Cui, E., Lovinger, D., Pereira, F. (2024). A 
-#' Statistical Framework for Analysis of Trial-Level Temporal Dynamics in 
+#' @references Loewinger, G., Cui, E., Lovinger, D., Pereira, F. (2024). A
+#' Statistical Framework for Analysis of Trial-Level Temporal Dynamics in
 #' Fiber Photometry Experiments. \emph{eLife}, 95802.
 #'
 #' @export
@@ -149,7 +150,8 @@ fui <- function(
   MoM = 1,
   concurrent = FALSE,
   impute_outcome = FALSE,
-  override_zero_var = FALSE
+  override_zero_var = FALSE,
+  unsmooth = FALSE
 ) {
 
   # 0. Setup ###################################################################
@@ -326,14 +328,14 @@ fui <- function(
   # 1. Massively univariate mixed models #######################################
 
   if (!silent)
-    print("Step 1: Fit Massively Univariate Mixed Models")
+    message("Step 1: Fit Massively Univariate Mixed Models")
 
   # Create a list of univariate models ("massively univariate")
   mum <- massmm(fmm, parallel, n_cores)
 
   # 2. Smoothing ###############################################################
 
-  if (!silent) print("Step 2: Smoothing")
+  if (!silent) message("Step 2: Smoothing")
 
   # Penalized splines smoothing and extract components (analytic)
   # Number of knots for regression coefficients
@@ -401,7 +403,8 @@ fui <- function(
     )
   }
   rownames(betaHat) <- rownames(betaTilde)
-  rm(betaTilde)
+  # Discard the original estimates if not asked for
+  if (!unsmooth) rm(betaTilde)
   colnames(betaHat) <- 1:L
 
   # Save a convenient list to pass to variance calculation
@@ -417,6 +420,15 @@ fui <- function(
 
   # 3.0 Early return ===========================================================
 
+  res <- list(
+    betaHat = smoothed$betaHat,
+    HHat = smoothed$HHat,
+    argvals = argvals,
+    aic = mum$AIC_mat
+  )
+
+  if (unsmooth) res$betaTilde <- betaTilde
+
   # End the function call if no variance calculation is required
   if (!var) {
     if (!silent) {
@@ -428,16 +440,7 @@ fui <- function(
         )
       )
     }
-    # AX: Add additional return of smoothed HHat
-
-    return(
-      list(
-        betaHat = smoothed$betaHat,
-        HHat = smoothed$HHat,
-        argvals = argvals,
-        aic = mum$AIC_mat
-        )
-      )
+    return(res)
   }
 
   # At this point, the function either chooses analytic or bootstrap inference
@@ -446,7 +449,6 @@ fui <- function(
   # 3.1 Analytic inference #####################################################
 
   if (analytic) {
-    if (!silent) print("Step 3: Inference (Analytic)")
     var_res <- var_analytic(
       fmm,
       mum,
@@ -460,13 +462,12 @@ fui <- function(
       silent
     )
   } else {
-    if (!silent) print("Step 3: Inference (Bootstrap)")
     var_res <- var_bootstrap(mum)
   }
 
   # AX: Can't really remove this at any other point
   if (!design_mat) var_res$designmat <- NULL
-
+  if (unsmooth) var_res$betaTilde <- betaTilde
 
   return(var_res)
 }
