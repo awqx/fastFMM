@@ -152,7 +152,7 @@ This dataset has $N = \sum_{i = 1}^I n_i$ rows, where $n_i$ is the number of rep
 
 When we specify a model below using the `fui()` function, it will take the columns starting with the string 'Y.' and assume they are ordered from left to right. For that reason, make sure no other variables begin with the same substring.
 
-Alternatively, instead of relying on the column names, we can save the matrix $N \times L$ matrix associated with our functional outcomes as a \`\`column'' of a dataframe.
+Alternatively, instead of relying on the column names, we can save the $N \times L$ matrix associated with our functional outcomes as a \`\`column'' of a dataframe.
 
 ```{r, eval = FALSE}
 Y_mat <- dat[,-seq(1,3)]

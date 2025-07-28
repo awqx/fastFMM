@@ -2,7 +2,7 @@ Package: fastFMM
 Type: Package
 Title: Fast Functional Mixed Models using Fast Univariate Inference
 Version: 0.4.0
-Date: 2025-03-13
+Date: 2025-07-23
 Authors@R: c(
     person("Erjia", "Cui", role = c("aut", "cre"), email = "ecui@umn.edu"),
     person("Gabriel", "Loewinger", role = "aut", email = "gloewinger@gmail.com"),
@@ -41,3 +41,5 @@ Suggests:
     rmarkdown,
     spelling
 Language: en-US
+Depends: 
+    R (>= 2.10)

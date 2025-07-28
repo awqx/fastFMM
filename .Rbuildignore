@@ -11,4 +11,6 @@ fui_conc\.Rmd
 ^.*\_oop\.*
 ^.*\_conc\.*
 ^.*\-NOTES\.*
-^data/
+^data-raw/
+^data/hidden/
+^data-raw$

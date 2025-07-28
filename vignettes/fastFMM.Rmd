@@ -26,16 +26,16 @@ library(fastFMM)
 
 ### Installation
 
-While `fastFMM` is available on CRAN, the development version of the package can be downloaded from [GitHub](https://github.com/awqx/fastFMM):
+While `fastFMM` is available on CRAN, the development version of the package can be downloaded from [GitHub](https://github.com/gloewing/fastFMM):
 
 ```{r, eval = FALSE}
 if (!require("devtools")) install.packages("devtools")
-devtools::install_github("awqx/fastFMM", dependencies = T)
+devtools::install_github("gloewing/fastFMM", dependencies = T)
 ```
 
 ### Fast univariate inference (FUI)
 
-Let $Y_{i, j} (s)$ be observations of multi-level/longitudinal functional data on the compact functional domain $\mathcal{S} = \{s_1, s_2, \dots, s_L\}$. We denote $i = 1, 2, ..., I$ the index of the subject and $j = 1, 2, ..., J_i$ the index of longitudinal visit at time $t_{i, j}$. For each visit of each subject, we observe the fixed effects column vector $\mathbf{X}_{i, j} = [X_{i, j, 1}, X_{i, j, 2}, \dots, X_{i, j, p}]^T \in \mathbb{R}^p$ and the random effects column vector $\mathbf{Z}_{ij} = [Z_{i, j, 1}, Z_{i, j, 2}, ..., Z_{i, j, q}]^T \in \mathbb{R}^q$. Let $g(\cdot)$ be some pre-specified link function and $EF(\cdot)$ be some exponential family distribution. A longitudinal function-on-scalar regression model has the form
+Let $Y_{i, j} (s)$ be observations of multi-level/longitudinal functional data on the compact functional domain $\mathcal{S} = \{s_1, s_2, \dots, s_L\}$. Let $i = 1, 2, ..., I$ be the index of the subject and $j = 1, 2, ..., J_i$ be the index of longitudinal visit at time $t_{i, j}$. For each visit of each subject, we observe the fixed effects column vector $\mathbf{X}_{i, j} = [X_{i, j, 1}, X_{i, j, 2}, \dots, X_{i, j, p}]^T \in \mathbb{R}^p$ and the random effects column vector $\mathbf{Z}_{ij} = [Z_{i, j, 1}, Z_{i, j, 2}, ..., Z_{i, j, q}]^T \in \mathbb{R}^q$. Let $g(\cdot)$ be some pre-specified link function and $EF(\cdot)$ be some exponential family distribution. A longitudinal function-on-scalar regression model has the form
 
 $$
 \begin{aligned} 
@@ -68,30 +68,54 @@ We describe applications of `fastFMM` to photometry signal analysis in [Loewinge
 
 ## Reading data
 
-The function `fastFMM::fui` requires that data be presented in a long format, i.e., columns correspond to locations on the functional domain $1, 2, \dots, L$ and rows correspond to longitudinal observations $t_{i, j}$. For example, within `fastFMM`, we provide the pre-formatted dataset `lick`, sourced from [Jeong et al. (2022)](https://doi.org/10.1126/science.abq6740). 
+The function `fastFMM::fui` requires that data be presented in a long format, i.e., with columns corresponding to locations on the functional domain $1, 2, \dots, L$ and with rows corresponding to longitudinal observations $t_{i, j}$. For example, within `fastFMM`, we provide the pre-formatted dataset `lick`, sourced from [Jeong et al. (2022)](https://doi.org/10.1126/science.abq6740). 
 
 ```{r read lick}
-lick <- read.csv("../data/lick.csv")
+# Replace this with a package call
+lick <- load(file = "../data/lick.rda", verbose = T)
 ```
-
-The columns `id, session, trial` correspond to trial-level covariates. The functional outcome of `photometry` is stored in the columns `photometry_1, photometry_2, ..., photometry_50` and the functional covariate `lick` is stored in the columns `lick_1, lick_2, ..., lick_50`.
-
-Alternatively, functional outcomes and covariates can be stored `AsIs` as matrix columns. 
-
-```{r lick asis}
-library(dplyr)
-lick_asis <- lick %>%
-  mutate(
-    photometry = AsIs(dplyr::select(lick, photometry_1:photometry_50))
-  ) %>%
-  select(-photometry_1:-photometry_50, -lick_1:-lick_50)
-```
-
-
-In the remainder of this tutorial, we will continue to use the original data frame `lick`. 
-
-## Non-concurrent FMM fitting
 
 ### Data formatting
 
+The columns `id, session, trial` correspond to trial-level covariates. The functional outcome of `photometry` is stored in the columns `photometry_1, photometry_2, ..., photometry_50` and the functional covariate `lick` is stored in the columns `lick_1, lick_2, ..., lick_50`. The `lick` dataset importable through `fastFMM` is a downsampled version of the original, containing half as many trials and half as many recording timepoints. 
 
+We also provide the option to save functional outcomes and covariates as `AsIs` matrix columns. There are no particular differences between these two data structures. Below is an example of how an `AsIs` matrix column might be created.
+
+```{r lick asis, eval = F}
+# AX: fix this
+library(dplyr)
+lick_asis <- lick %>%
+  mutate(
+    photometry = matrix(dplyr::select(lick, photometry_1:photometry_43)))
+  ) %>%
+  select(-photometry_1:-photometry_50, -lick_1:-lick_43)
+```
+
+In the remainder of this tutorial, we will continue to use the original data frame `lick`. Below is an excerpt from `lick`, ignoring the columns containing scalar trial-specific covariates.
+
+```{r lick colnames, echo = F}
+knitr::kable(head(lick[, 1:12] %>% select(-lick_rate_050:-iri)))
+```
+
+The data frame `lick` has $N = \sum_{i = 1}^I n_i$ rows, where $n_i$ is the number of repeated measures observations of subject/cluster $i$. The first three columns of the dataset include the covariates subject ID (`id`), session number (`session`), and trial number (`trial`). Each of the remaining columns are observations of our functional outcome named $[\texttt{photometry_1}, \; \texttt{photometry_2}, \dots, \; \texttt{photometry_L}]$, where $L$ is the size of the functional domain. The prefix `photometry_` is arbitrary and can be replaced with any convenient outcome name. However, because `fastFMM::fui` uses initial string matching to find functional outcome and covariate columns, the identifying prefix substring should be unique and not shared with any other columns. Furthermore, `fastFMM::fui` assumes any functional columns are ordered from left to right. 
+
+## Non-concurrent FMM fitting
+
+In this dataset, we will use `lick_rate_NNN` as an example trial-specific behavioral summary. The covariate `lick_rate_NNN` is calculated as the average licking rate in the `NNN` hundredths of seconds after the reward is delivered. E.g., `lick_rate_050` is the average licking rate 0.5 seconds after reward delivery. We provide calculated lick rates for four different time periods (0.5, 1.0, 1.5, and 2.0 seconds). 
+
+```{r lick cov names, echo = F}
+knitr::kable(lick[1:5, 1:7])
+```
+
+Creating a FLMM follows the general formulat
+
+```{r}
+# AX: fix printing of test message
+lick_prob_050 <- fastFMM::fui(
+  photometry ~ lick_rate_050 + trial + session + (lick_rate_050|id), 
+  data = lick
+)
+```
+
+
+## Concurrent FMM fitting
