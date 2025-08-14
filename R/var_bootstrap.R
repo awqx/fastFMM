@@ -140,7 +140,7 @@ var_bootstrap <- function(
         argvals = argvals,
         var = FALSE,
         analytic = FALSE,
-        parallel = FALSE,
+        parallel = parallel,
         silent = TRUE,
         nknots_min = nknots_min,
         nknots_min_cov = nknots_min_cov,

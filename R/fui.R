@@ -58,7 +58,8 @@
 #' @param seed Numeric value used to make sure bootstrap replicate (draws) are
 #' correlated across functional domains for certain bootstrap approach
 #' @param subj_id Name of the variable that contains subject ID.
-#' @param n_cores Number of cores for parallelization. Defaults to 1.
+#' @param n_cores Number of cores for parallelization. If not specified,
+#' defaults to 3/4ths of detected cores.
 #' @param caic Logical, indicating whether to calculate cAIC. Defaults to
 #' \code{FALSE}.
 #' @param randeffs Logical, indicating whether to return random effect estimates.
@@ -139,7 +140,7 @@ fui <- function(
   boot_type = NULL,
   seed = 1,
   subj_id = NULL,
-  n_cores = 1,
+  n_cores = NULL,
   caic = FALSE,
   randeffs = FALSE,
   non_neg = 0,
@@ -155,12 +156,13 @@ fui <- function(
   # 0.0 Argument consistency checks ============================================
 
   # If doing parallel computing, set up the number of cores
-  if (parallel & !is.integer(n_cores)) {
+  # If n_cores is not specified, used 3/4ths of available cores
+  if (parallel & is.null(n_cores)) {
     n_cores <- as.integer(round(parallel::detectCores() * 0.75))
     if (n_cores < 2)
       warning("Only 1 core detected for parallelization.")
     if (!silent)
-      message("Cores used for parallelization: ", n_cores)
+      message("`n_cores` not specified, defaulting to ", n_cores)
   }
 
   # For non-Gaussian family, manually set variance to bootstrap inference

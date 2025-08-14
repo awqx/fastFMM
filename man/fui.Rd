@@ -23,7 +23,7 @@ fui(
   boot_type = NULL,
   seed = 1,
   subj_id = NULL,
-  n_cores = 1,
+  n_cores = NULL,
   caic = FALSE,
   randeffs = FALSE,
   non_neg = 0,
@@ -95,7 +95,8 @@ correlated across functional domains for certain bootstrap approach}
 
 \item{subj_id}{Name of the variable that contains subject ID.}
 
-\item{n_cores}{Number of cores for parallelization. Defaults to 1.}
+\item{n_cores}{Number of cores for parallelization. If not specified,
+defaults to 3/4ths of detected cores.}
 
 \item{caic}{Logical, indicating whether to calculate cAIC. Defaults to
 \code{FALSE}.}

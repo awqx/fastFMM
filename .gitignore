@@ -15,5 +15,4 @@ data/hidden/
 *tar.gz
 *rebuild.R
 *_conc.*
-fastFMM-vignette-ref.Rmd
 inst/doc
