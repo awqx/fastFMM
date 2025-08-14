@@ -5,14 +5,17 @@
 \title{Analytic variance calculation}
 \usage{
 var_bootstrap(
+  fmm,
   mum,
-  umm,
   nknots_min,
   nknots_min_cov,
+  nknots_fpca,
   betaHat,
   data,
   L,
-  num_boots,
+  n_boots,
+  boot_type,
+  seed,
   parallel,
   n_cores,
   smooth_method,
@@ -21,13 +24,15 @@ var_bootstrap(
 )
 }
 \arguments{
-\item{mum}{Massively univariate model output of class "massmm"}
+\item{fmm}{Object of class "fastFMM".}
 
-\item{umm}{Univariate mixed model setup of class "unimm"}
+\item{mum}{Massively univariate model output of class "massmm"}
 
 \item{nknots_min}{Integer passed from `fui`.}
 
 \item{nknots_min_cov}{Integer passed from `fui`.}
+
+\item{nknots_fpca}{Integer passed from `fui`.}
 
 \item{betaHat}{Numeric matrix of smoothed coefficients}
 
@@ -35,7 +40,11 @@ var_bootstrap(
 
 \item{L}{integer, number of points on functional domain}
 
-\item{num_boots}{Integer, number of bootstrap replications.}
+\item{n_boots}{Integer, number of bootstrap replications.}
+
+\item{boot_type}{Character, bootstrapping protocol.}
+
+\item{seed}{Integer, random seed for reproducibility.}
 
 \item{parallel}{Logical, whether to use parallel processing}
 

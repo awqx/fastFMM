@@ -2,14 +2,17 @@
 #'
 #' Helper for `fui`. Bootstrapped variance calculation.
 #'
+#' @param fmm Object of class "fastFMM".
 #' @param mum Massively univariate model output of class "massmm"
-#' @param umm Univariate mixed model setup of class "unimm"
 #' @param nknots_min Integer passed from `fui`.
 #' @param nknots_min_cov Integer passed from `fui`.
+#' @param nknots_fpca Integer passed from `fui`.
 #' @param betaHat Numeric matrix of smoothed coefficients
 #' @param data Data frame of values to fit
 #' @param L integer, number of points on functional domain
-#' @param num_boots Integer, number of bootstrap replications.
+#' @param n_boots Integer, number of bootstrap replications.
+#' @param boot_type Character, bootstrapping protocol.
+#' @param seed Integer, random seed for reproducibility.
 #' @param parallel Logical, whether to use parallel processing
 #' @param n_cores Integer, number of cores for parallelization.
 #' @param smooth_method Character, passed from `fui`
@@ -26,14 +29,17 @@
 #' @importFrom mvtnorm rmvnorm
 
 var_bootstrap <- function(
+  fmm,
   mum,
-  umm,
   nknots_min,
   nknots_min_cov,
+  nknots_fpca,
   betaHat,
   data,
   L,
-  num_boots,
+  n_boots,
+  boot_type,
+  seed,
   parallel,
   n_cores,
   smooth_method,
@@ -41,13 +47,15 @@ var_bootstrap <- function(
   silent
 ) {
 
-  if (!silent) print("Step 3: Inference (Bootstrap)")
+  if (!silent) message("Step 3: Inference (Bootstrap)")
+
+  # 1 Generate resamplings #####################################################
 
   # Check to see if group contains ":" which indicates hierarchical structure
   # and group needs to be specified
   group <- mum$group
   subj_id <- mum$subj_id
-  argvals <- mum$argvals
+  argvals <- fmm$argvals
 
   if (grepl(":", group, fixed = TRUE)) {
     if (is.null(subj_id)) {
@@ -59,21 +67,22 @@ var_bootstrap <- function(
       message("You must specify the argument: ID")
     }
   }
-  ID.number <- unique(data[, group])
-  idx_perm <- t(
+
+  ids <- unique(data[, group])
+  id_perms <- t(
     replicate(
-      num_boots,
-      sample.int(length(ID.number), length(ID.number), replace = TRUE)
+      n_boots,
+      sample.int(length(ids), length(ids), replace = TRUE)
     )
   )
-  B <- num_boots
+  B <- n_boots
   betaHat_boot <- array(NA, dim = c(nrow(betaHat), ncol(betaHat), B))
 
-  family <- umm$family
+  family <- fmm$family
   if (is.null(boot_type)) {
     # default bootstrap type if not specified
     if (family == "gaussian") {
-      boot_type <- ifelse(length(ID.number) <= 10, "reb", "wild")
+      boot_type <- ifelse(length(ids) <= 10, "reb", "wild")
     } else {
       boot_type <- "cluster"
     }
@@ -81,72 +90,93 @@ var_bootstrap <- function(
 
   if (family != "gaussian" & boot_type %in% c("wild", "reb")) {
     stop(
-      paste0(
-        'Non-gaussian outcomes only supported for some bootstrap procedures.',
-        '\n',
-        'Set argument `boot_type` to one of the following:', '\n',
-        ' "parametric", "semiparametric", "cluster", "case", "residual"'
-      )
+      'Non-gaussian outcomes only supported for some bootstrap procedures.',
+      '\n',
+      'Set argument `boot_type` to one of the following:', '\n',
+      '"parametric", "semiparametric", "cluster", "case", "residual"'
     )
   }
-  message(paste("Bootstrapping Procedure:", as.character(boot_type)))
+
+  message(
+    "Bootstrapping procedure: ",
+    as.character(boot_type)
+  )
+
+  # 2 Bootstrap resampling #####################################################
+
   # original way
+  if (!silent)
+    message("Step 3.1: Bootstrap resampling")
+
   if (boot_type == "cluster") {
+
+    # 2A Cluster bootstrap =====================================================
+
     # Do bootstrap
     pb <- progress_bar$new(total = B)
-    for(boots in 1:B) {
+    for (b in 1:B) {
+
       pb$tick()
       # take one of the randomly sampled (and unique) combinations
-      sample.ind <- idx_perm[boots,]
-      dat.ind <- new_ids <- vector(length = length(sample.ind), "list")
-      for(ii in 1:length(sample.ind)) {
-        dat.ind[[ii]] <- which(data[, group] == ID.number[sample.ind[ii]])
-        # subj_b is now the pseudo_id
-        new_ids[[ii]] <- rep(ii, length(dat.ind[[ii]]))
-      }
-      dat.ind <- do.call(c, dat.ind)
-      new_ids <- do.call(c, new_ids)
-      df2 <- data[dat.ind, ] # copy dataset with subset of rows we want
-      df2[,subj_id] <- new_ids # replace old IDs with new IDs
+      id_perm <- id_perms[b,]
+      dat_idx <- new_ids <- vector(length = length(id_perm), "list")
 
+      for(ii in 1:length(id_perm)) {
+        dat_idx[[ii]] <- which(data[, group] == ids[id_perm[ii]])
+        # subj_b is now the pseudo_id
+        new_ids[[ii]] <- rep(ii, length(dat_idx[[ii]]))
+      }
+
+      dat_idx <- do.call(c, dat_idx)
+      new_ids <- do.call(c, new_ids)
+      df2 <- data[dat_idx, ] # copy dataset with subset of rows we want
+      df2[, subj_id] <- new_ids # replace old IDs with new IDs
+
+      # Fastest fit is analytic = F, var = F
       fit_boot <- fui(
-        formula = umm$formula,
+        formula = fmm$formula,
         data = df2,
-        family = umm$family,
+        family = fmm$family,
         argvals = argvals,
         var = FALSE,
+        analytic = FALSE,
         parallel = FALSE,
         silent = TRUE,
         nknots_min = nknots_min,
         nknots_min_cov = nknots_min_cov,
         smooth_method = smooth_method,
         splines = splines,
-        residuals = umm$residuals,
+        residuals = fmm$residuals,
         subj_id = mum$subj_id,
-        n_cores = n_cores,
-        REs = FALSE
+        n_cores = n_cores
       )
-
-      betaHat_boot[, , boots] <- fit_boot$betaHat
+      # Save fixed coefficients
+      betaHat_boot[, , b] <- fit_boot$betaHat
     }
-    rm(fit_boot, df2, dat.ind, new_ids)
+    rm(fit_boot, df2, dat_idx, new_ids)
+
+    if (!silent)
+      message('Step 3.2: (Smoothing skipped for boot_type = "cluster"')
+
   } else {
+
+    # 2B lmeresampler bootstrap ================================================
 
     # lmeresampler() way
     # Use original amount. Do not constrain by number of unique resampled
     # types here because we cannot construct rows to resample.
-    B <- num_boots
+
+    B <- n_boots
     betaHat_boot <- betaTilde_boot <- array(
       NA, dim = c(nrow(betaHat), ncol(betaHat), B)
     )
-    # , as.character(boot_type)
-    if (!silent)
-      print("Step 3.1: Bootstrap resampling-")
+
+    model_formula <- as.character(fmm$formula)
 
     pb <- progress_bar$new(total = L)
     for(l in 1:L) {
       pb$tick()
-      data$Yl <- unclass(data[,out_index][,argvals[l]])
+      data$Yl <- unclass(data[, fmm$out_index][, fmm$argvals[l]])
       fit_uni <- suppressMessages(
         lmer(
           formula = stats::as.formula(paste0("Yl ~ ", model_formula[3])),
@@ -168,12 +198,14 @@ var_bootstrap <- function(
           type = boot_type,
           rbootnoise = 0.0001
         )$replicates
-        betaTilde_boot[,l,] <- t(as.matrix(boot_sample[,1:nrow(betaHat)]))
-      }else if (boot_type %in% c("wild", "reb", "case") ) {
+        betaTilde_boot[, l, ] <- t(as.matrix(boot_sample[,1:nrow(betaHat)]))
+
+      } else if (boot_type %in% c("wild", "reb", "case")) {
         # for case
         flist <- lme4::getME(fit_uni, "flist")
         re_names <- names(flist)
         clusters_vec <- c(rev(re_names), ".id")
+
         # for case bootstrap, we only resample at first (subject level)
         # because doesn't make sense to resample within-cluster for
         # longitudinal data
@@ -187,10 +219,10 @@ var_bootstrap <- function(
           aux.dist = "mammen", # wild bootstrap
           reb_type = 0
         )$replicates # for reb bootstrap only
-        betaTilde_boot[, l, ] <- t(as.matrix(boot_sample[,1:nrow(betaHat)]))
+        betaTilde_boot[, l, ] <- t(as.matrix(boot_sample[, 1:nrow(betaHat)]))
       } else {
         use.u <- ifelse(boot_type == "semiparametric", TRUE, FALSE)
-        betaTilde_boot[,l,] <- t(
+        betaTilde_boot[, l, ] <- t(
           lme4::bootMer(
             x = fit_uni, FUN = function(.) {fixef(.)},
             nsim = B,
@@ -204,9 +236,15 @@ var_bootstrap <- function(
 
     suppressWarnings(rm(boot_sample, fit_uni))
     # smooth across functional domain
-    if (!silent)   print("Step 3.2: Smooth Bootstrap estimates")
-    for(b in 1:B) {
-      betaHat_boot[,,b] <- t(
+
+    # 2B.1 Smooth bootstrap estimates ------------------------------------------
+
+    if (!silent)
+      message("Step 3.2: Smooth Bootstrap estimates")
+
+    nknots <- min(round(L / 2), nknots_min)
+    for (b in 1:B) {
+      betaHat_boot[, , b] <- t(
         apply(
           betaTilde_boot[, , b],
           1,
@@ -223,23 +261,27 @@ var_bootstrap <- function(
   }
 
   # Obtain bootstrap variance
-  betaHat.var <- array(NA, dim = c(L, L, nrow(betaHat)))
+  betaHat_var <- array(NA, dim = c(L, L, nrow(betaHat)))
   ## account for within-subject correlation
   for(r in 1:nrow(betaHat)) {
-    betaHat.var[,,r] <- 1.2 * var(t(betaHat_boot[r, , ]))
+    betaHat_var[, , r] <- 1.2 * var(t(betaHat_boot[r, , ]))
   }
+
+  # 3 Joint CIs ################################################################
 
   # Obtain qn to construct joint CI using the fast approach
   if (!silent)
-    print("Step 3.3: Joint confidence interval construction")
+    message("Step 3.3: Joint confidence interval construction")
+
   qn <- rep(0, length = nrow(betaHat))
   ## sample size in simulation-based approach
   N <- 10000
   # set seed to make sure bootstrap replicate (draws) are correlated across
   # functional domains
   set.seed(seed)
+
   for(i in 1:length(qn)) {
-    est_bs <- t(betaHat_boot[i,,])
+    est_bs <- t(betaHat_boot[i, , ])
     # suppress sqrt(Eigen$values) NaNs
     fit_fpca <- suppressWarnings(
       refund::fpca.face(est_bs, knots = nknots_fpca)
@@ -251,7 +293,7 @@ var_bootstrap <- function(
 
     ## simulate random coefficients
     # generate independent standard normals
-    theta <- matrix(stats::rnorm(N*K), nrow=N, ncol=K)
+    theta <- matrix(stats::rnorm(N * K), nrow = N, ncol = K)
     if (K == 1) {
       # scale to have appropriate variance
       theta <- theta * sqrt(lambda)
@@ -275,24 +317,24 @@ var_bootstrap <- function(
     qn[i] <- stats::quantile(un, 0.95)
   }
 
-  if (!silent)
-    message(
-      paste0(
-        "Complete!", "\n",
-        " - Use plot_fui() function to plot estimates", "\n",
-        " - For more information, run the command:  ?plot_fui"
-      )
-    )
-
   return(
     list(
       betaHat = betaHat,
-      betaHat.var = betaHat.var,
+      betaHat_var = betaHat_var,
       qn = qn,
-      aic = AIC_mat,
-      residuals = resids,
-      bootstrap_samps = B,
-      argvals = argvals
+      aic = mum$AIC_mat,
+      betaTilde = mum$betaTilde,
+      var_random = mum$var_random,
+      designmat = mum$designmat,
+      residuals = mum$residuals,
+      H = NULL,
+      R = NULL,
+      G = NULL,
+      GHat = NULL,
+      Z = mum$ztlist,
+      argvals = fmm$argvals,
+      randeffs = mum$randeffs,
+      se_mat = mum$se_mat
     )
   )
 }

@@ -197,8 +197,8 @@ unimm_outs <- function(fit_uni, fmm) {
     randeffs = randeffs
   )
 
-  if (!fmm$analytic)
-    return(res)
+  # if (!fmm$analytic)
+  #   return(res)
 
   # Need additional info for analytic variance calculation
   # Extract variance/covariance estimates

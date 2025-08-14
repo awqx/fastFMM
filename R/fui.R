@@ -2,7 +2,7 @@
 #'
 #' Fit a function-on-scalar regression model for longitudinal
 #' functional outcomes and scalar predictors using the Fast Univariate
-#' Inference (FUI) approach (Cui et al. 2022; Loewinger et al. 2024).
+#' Inference (FUI) approach (Cui et al. 2022).
 #'
 #' The FUI approach comprises of three steps:
 #' \enumerate{
@@ -14,8 +14,7 @@
 #' }
 #'
 #' For more information on each step, please refer to the FUI paper
-#' by Cui et al. (2022). For more information on the method of moments estimator
-#' applied in step 3, see Loewinger et al. (2024).
+#' by Cui et al. (2022).
 #'
 #' @param formula Two-sided formula object in lme4 formula syntax.
 #' The difference is that the response need to be specified as a matrix
@@ -50,7 +49,7 @@
 #' Defaults to \code{FALSE}
 #' @param residuals Logical, indicating whether to save residuals from
 #' unsmoothed LME. Defaults to \code{FALSE}.
-#' @param num_boots Number of samples when using bootstrap inference. Defaults
+#' @param n_boots Number of samples when using bootstrap inference. Defaults
 #' to 500.
 #' @param boot_type Bootstrap type (character): "cluster", "case", "wild",
 #' "reb", "residual", "parametric", "semiparametric". \code{NULL} defaults to
@@ -94,9 +93,6 @@
 #' @references Cui, E., Leroux, A., Smirnova, E., Crainiceanu, C. (2022). Fast
 #' Univariate Inference for Longitudinal Functional Models. \emph{Journal of
 #' Computational and Graphical Statistics}, 31(1), 219-230.
-#' @references Loewinger, G., Cui, E., Lovinger, D., Pereira, F. (2024). A
-#' Statistical Framework for Analysis of Trial-Level Temporal Dynamics in
-#' Fiber Photometry Experiments. \emph{eLife}, 95802.
 #'
 #' @export
 #'
@@ -139,7 +135,7 @@ fui <- function(
   splines = "tp",
   design_mat = FALSE,
   residuals = FALSE,
-  num_boots = 500,
+  n_boots = 500,
   boot_type = NULL,
   seed = 1,
   subj_id = NULL,
@@ -154,7 +150,7 @@ fui <- function(
   unsmooth = FALSE
 ) {
 
-  # 0. Setup ###################################################################
+  # 0 Setup ###################################################################
 
   # 0.0 Argument consistency checks ============================================
 
@@ -183,7 +179,12 @@ fui <- function(
   # Detect functional covariates by matching length to L
   model_formula <- as.character(formula)
   out_index <- grep(paste0("^", model_formula[2]), names(data))
-  L <- length(out_index)
+  if (is.null(argvals)) {
+    L <- length(out_index)
+  } else {
+    L <- length(argvals)
+  }
+
   x_names <- all.vars(formula)[-1]
   x_classes <- sapply(x_names, function(x) class(data[[x]]))
   x_ncols <- sapply(
@@ -325,7 +326,7 @@ fui <- function(
     fmm$data <- data
   }
 
-  # 1. Massively univariate mixed models #######################################
+  # 1 Massively univariate mixed models #######################################
 
   if (!silent)
     message("Step 1: Fit Massively Univariate Mixed Models")
@@ -333,7 +334,7 @@ fui <- function(
   # Create a list of univariate models ("massively univariate")
   mum <- massmm(fmm, parallel, n_cores)
 
-  # 2. Smoothing ###############################################################
+  # 2 Smoothing ###############################################################
 
   if (!silent) message("Step 2: Smoothing")
 
@@ -416,7 +417,7 @@ fui <- function(
     lambda = lambda
   )
 
-  # 3. Variance estimation #####################################################
+  # 3 Variance estimation #####################################################
 
   # 3.0 Early return ===========================================================
 
@@ -446,9 +447,10 @@ fui <- function(
   # At this point, the function either chooses analytic or bootstrap inference
   # Uses bootstrap in the non-analytic case
 
-  # 3.1 Analytic inference #####################################################
-
   if (analytic) {
+
+    # 3.1 Analytic inference ===================================================
+
     var_res <- var_analytic(
       fmm,
       mum,
@@ -462,12 +464,42 @@ fui <- function(
       silent
     )
   } else {
-    var_res <- var_bootstrap(mum)
+
+    # 3.2 Bootstrap inference ==================================================
+
+    var_res <- var_bootstrap(
+      fmm = fmm,
+      mum = mum,
+      nknots_min = nknots_min,
+      nknots_min_cov = nknots_min_cov,
+      nknots_fpca = nknots_fpca,
+      betaHat = betaHat,
+      data = data,
+      L = L,
+      n_boots = n_boots,
+      boot_type = boot_type,
+      seed = seed,
+      parallel = parallel,
+      n_cores = n_cores,
+      smooth_method = smooth_method,
+      splines = splines,
+      silent = silent
+    )
   }
 
-  # AX: Can't really remove this at any other point
-  if (!design_mat) var_res$designmat <- NULL
-  if (unsmooth) var_res$betaTilde <- betaTilde
+  # Unfortumately, setting design_mat to FALSE doesn't save memory during
+  # computation, but it will reduce the size of the outputted object
+  if (!design_mat)
+    var_res$designmat <- NULL
+  if (unsmooth)
+    var_res$betaTilde <- betaTilde
+
+  if (!silent)
+    message(
+      "Complete!", "\n",
+      " - Use plot_fui() function to plot estimates.", "\n",
+      " - For more information, run the command:  ?plot_fui"
+    )
 
   return(var_res)
 }

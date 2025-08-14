@@ -38,12 +38,12 @@ massmm.fastFMM <- function(fmm, parallel, n_cores) {
   if (!fmm$analytic)
     return(res)
 
-  var_random <- res$var_random
-  se_mat <- suppressMessages(do.call(cbind, lapply(mass_list, '[[', 'se_mat')))
-  sigmaesqHat <- var_random["var.Residual", , drop = FALSE]
+  # var_random <- t(do.call(rbind, lapply(mass_list, '[[', 'var_random')))
   # sigmausqHat <- var_random[
   #   which(rownames(var_random) != "var.Residual"), , drop = FALSE
   # ]
+  se_mat <- suppressMessages(do.call(cbind, lapply(mass_list, '[[', 'se_mat')))
+  sigmaesqHat <- res$var_random["var.Residual", , drop = FALSE]
 
   # Return random effects
   randeffs <- NULL
@@ -73,43 +73,26 @@ massmm.fastFMM <- function(fmm, parallel, n_cores) {
   varcorr_df <- varcorr_df[varcorr_df$grp != "Residual", 1:3]
   ztlist <- sapply(lme4::getME(fit_uni, "Ztlist"), Matrix::t)
 
-  # Check if group contains ":" (hierarchical structure) that requires the
-  # group to be specified
-  group <- mass_list[[1]]$group ## group name in the data
-  subj_id <- fmm$subj_id
-  if (grepl(":", group, fixed = TRUE)) {
-    if (is.null(subj_id)) {
-      # Assumes the ID name is to the right of the ":"
-      group <- sub(".*:", "", group)
-    } else {
-      # Use user-specified ID if it exists
-      group <- subj_id
-    }
-  }
-
-  if (is.null(subj_id))
-    subj_id <- group
-
   # Condition for using G_estimate_randint
   randintercept <- I(
     length(fit_uni@cnms) == 1 &
-      length(fit_uni@cnms[[group]]) == 1 &
-      fit_uni@cnms[[group]][1] == "(Intercept)"
+      length(fit_uni@cnms[[res$group]]) == 1 &
+      fit_uni@cnms[[res$group]][1] == "(Intercept)"
   )
 
   # Check for what needs to be returned
   # This will get passed to smoothing
   res_analytic <- list(
     sigmaesqHat = sigmaesqHat,
-    sigmausqHat = res$sigmausqHat,
+    # sigmausqHat = sigmausqHat,
     se_mat = se_mat,
-    var_random = var_random,
+    # var_random = var_random,
     varcorr_df = varcorr_df,
     randeffs = randeffs,
     ztlist = ztlist,
     designmat = designmat,
-    group = group,
-    subj_id = subj_id,
+    # group = group,
+    # subj_id = subj_id,
     randintercept = randintercept,
     out_index = out_index
   )
@@ -135,7 +118,6 @@ massmm.fastFMM <- function(fmm, parallel, n_cores) {
 massmm.fastFMMconc <- function(fmm, parallel, n_cores) {
   # Generate the univariate fits
   mass_list <- massmm_apply(fmm, parallel, n_cores)
-  # print(mass_list)
   res <- massmm_outs(mass_list, fmm)
   res$analytic <- fmm$analytic
 
@@ -144,13 +126,14 @@ massmm.fastFMMconc <- function(fmm, parallel, n_cores) {
     return(res)
 
   # If analytic, add outputs for variance estimation
-  var_random <- res$var_random
-  sigmausqHat <- res$sigmausqHat
-  se_mat <- suppressMessages(do.call(cbind, lapply(mass_list, '[[', 'se_mat')))
-  sigmaesqHat <- var_random["var.Residual", , drop = FALSE]
+  # var_random <- t(do.call(rbind, lapply(mass_list, '[[', 'var_random')))
   # sigmausqHat <- var_random[
   #   which(rownames(var_random) != "var.Residual"), , drop = FALSE
   # ]
+  # var_random <- res$var_random
+  # sigmausqHat <- res$sigmausqHat
+  se_mat <- suppressMessages(do.call(cbind, lapply(mass_list, '[[', 'se_mat')))
+  sigmaesqHat <- res$var_random["var.Residual", , drop = FALSE]
 
   # Collect random effects
   randeffs <- NULL
@@ -170,25 +153,7 @@ massmm.fastFMMconc <- function(fmm, parallel, n_cores) {
   ztlist <- lapply(mass_list, "[[", "ztlist")
   designmat <- lapply(mass_list, "[[", "designmat")
 
-  # Check if group contains ":" (hierarchical structure) that requires the
-  # group to be specified
-  group <- mass_list[[1]]$group ## group name in the data
-  subj_id <- fmm$subj_id
-  if (grepl(":", group, fixed = TRUE)) {
-    if (is.null(subj_id)) {
-      # Assumes the ID name is to the right of the ":"
-      group <- sub(".*:", "", group)
-    } else {
-      # Use user-specified ID if it exists
-      group <- subj_id
-    }
-  }
-
-  if (is.null(subj_id))
-    subj_id <- group
-
   # Condition for using G_estimate_randint
-  # AX: There's gotta be an easier way to do this
   # randintercept <- I(
   #   length(fit_uni@cnms) == 1 &
   #     length(fit_uni@cnms[[group]]) == 1 &
@@ -207,15 +172,15 @@ massmm.fastFMMconc <- function(fmm, parallel, n_cores) {
   # This will get passed to smoothing
   res_analytic <- list(
     sigmaesqHat = sigmaesqHat,
-    sigmausqHat = sigmausqHat,
+    # sigmausqHat = sigmausqHat,
     se_mat = se_mat,
-    var_random = var_random,
+    # var_random = var_random,
     varcorr_df = varcorr_df,
     randeffs = randeffs,
     ztlist = ztlist,
     designmat = designmat,
-    group = group,
-    subj_id = subj_id,
+    # group = group,
+    # subj_id = subj_id,
     randintercept = randintercept,
     out_index = out_index
   )
@@ -271,14 +236,14 @@ massmm_apply <- function(fmm, parallel, n_cores = 1) {
       fmm = fmm
     ),
     warning = function(w) {
-      print(paste0("Warning in parallelization of univariate fits:", "\n", w))
+      warning("Warning in parallelization of univariate fits:", "\n", w)
     },
     error = function(e) {
-      stop(paste0("Error in parallelization of univariate fits:", "\n", e))
+      stop("Error in parallelization of univariate fits:", "\n", e)
       stopCluster(cl)
     },
     finally = {
-      # if (!silent) print("Finished fitting univariate models.")
+      # if (!silent) message("Finished fitting univariate models.")
       stopCluster(cl)
     }
   )
@@ -315,12 +280,27 @@ massmm_outs <- function(mass_list, fmm) {
       do.call(cbind, lapply(mass_list, '[[', 'residuals'))
     )
 
-  # Add smoothed coefficients
-  # If analytic, add outputs for variance estimation
   var_random <- t(do.call(rbind, lapply(mass_list, '[[', 'var_random')))
   sigmausqHat <- var_random[
     which(rownames(var_random) != "var.Residual"), , drop = FALSE
   ]
+
+  # Check if group contains ":" (hierarchical structure) that requires the
+  # group to be specified
+  group <- mass_list[[1]]$group ## group name in the data
+  subj_id <- fmm$subj_id
+  if (grepl(":", group, fixed = TRUE)) {
+    if (is.null(subj_id)) {
+      # Assumes the ID name is to the right of the ":"
+      group <- sub(".*:", "", group)
+    } else {
+      # Use user-specified ID if it exists
+      group <- subj_id
+    }
+  }
+
+  if (is.null(subj_id))
+    subj_id <- group
 
   return(
     list(
@@ -328,7 +308,9 @@ massmm_outs <- function(mass_list, fmm) {
       AIC_mat = AIC_mat,
       residuals = resids,
       var_random = var_random,
-      sigmausqHat = sigmausqHat
+      sigmausqHat = sigmausqHat,
+      group = group,
+      subj_id = subj_id
     )
   )
 }

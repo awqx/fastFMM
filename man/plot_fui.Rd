@@ -59,6 +59,10 @@ plot_fui(fit_dti)
 Cui, E., Leroux, A., Smirnova, E., Crainiceanu, C. (2022). Fast
 Univariate Inference for Longitudinal Functional Models. \emph{Journal of
 Computational and Graphical Statistics}, 31(1), 219-230.
+
+Loewinger, G., Cui, E., Lovinger, D., Pereira, F. (2024). A
+Statistical Framework for Analysis of Trial-Level Temporal Dynamics in
+Fiber Photometry Experiments. \emph{eLife}, 95802.
 }
 \author{
 Gabriel Loewinger \email{gloewinger@gmail.com}, Erjia Cui \email{ecui@umn.edu}

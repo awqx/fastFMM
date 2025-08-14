@@ -19,7 +19,7 @@ fui(
   splines = "tp",
   design_mat = FALSE,
   residuals = FALSE,
-  num_boots = 500,
+  n_boots = 500,
   boot_type = NULL,
   seed = 1,
   subj_id = NULL,
@@ -29,7 +29,9 @@ fui(
   non_neg = 0,
   MoM = 1,
   concurrent = FALSE,
-  impute_outcome = FALSE
+  impute_outcome = FALSE,
+  override_zero_var = FALSE,
+  unsmooth = FALSE
 )
 }
 \arguments{
@@ -80,7 +82,7 @@ Defaults to \code{FALSE}}
 \item{residuals}{Logical, indicating whether to save residuals from
 unsmoothed LME. Defaults to \code{FALSE}.}
 
-\item{num_boots}{Number of samples when using bootstrap inference. Defaults
+\item{n_boots}{Number of samples when using bootstrap inference. Defaults
 to 500.}
 
 \item{boot_type}{Bootstrap type (character): "cluster", "case", "wild",
@@ -107,12 +109,20 @@ average of coefficents for 1 variance term. Defaults to 0.}
 
 \item{MoM}{Method of moments estimator. Defaults to 1.}
 
-\item{concurrent}{Logical, indicating whether to fit a concurrent model.
+\item{concurrent}{Logical, indicates whether to fit a concurrent model.
 Defaults to \code{FALSE}.}
 
-\item{impute_outcome}{Logical, indicating whether to impute missing outcome
+\item{impute_outcome}{Logical, indicates whether to impute missing outcome
 values with FPCA. Defaults to \code{FALSE}. Use with caution as the
 downstream effects are not tested.}
+
+\item{override_zero_var}{Logical, indicates whether to proceed with model
+fitting if columns have zero variance. Suggested for cases where individual
+columns have zero variance but interactions have non-zero variance. Defaults
+to `FALSE`.}
+
+\item{unsmooth}{Logical, indicates whether to return the raw estimates of
+coefficients and variances without smoothing. Defaults to `FALSE`.}
 }
 \value{
 A list containing:

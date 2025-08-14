@@ -341,20 +341,12 @@ var_analytic <- function(
     un <- Rfast::rowMaxs(x_sample, value = TRUE)
     qn[i] <- stats::quantile(un, 0.95)
   }
-  
+
   # # Alternate approach: t-distribution assumption instead of Normal
   # if (!silent)
   #   message("Assuming a t-distribution for confidence intervals.")
   # AX: add as option later
-  
-  # Decide whether to return design matrix or just set it to NULL
-  # if (!design_mat) designmat <- NA
-  if (!silent)
-    message(
-      "Complete!", "\n",
-      " - Use plot_fui() function to plot estimates.", "\n",
-      " - For more information, run the command:  ?plot_fui"
-    )
+
 
   return(
     list(

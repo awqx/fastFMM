@@ -50,7 +50,7 @@ trial_num   <- 100 # trials per session
 pre_reward_length       <- 0.4  # length of pre-reward period
 pre_lick_reward_period  <- 0.5
 post_lick_reward_period <- 1 # 1 second after
-post_reward_length     <- 1.5 # 2 seconds after reward period ends
+post_reward_length      <- 1.5 # 2 seconds after reward period ends
 
 # Functions ####################################################################
 
@@ -96,12 +96,19 @@ read_matlab <- function(f_name) {
 # name: column name in "data" variable
 # save_time : whether to save original time variable
 
-time_align <- function(time_truth, data, name = "timestamps", save_time = FALSE){
+time_align <- function(
+  time_truth,
+  data,
+  name = "timestamps",
+  save_time = FALSE
+){
   data_new <- data.table::as.data.table( data[name] )
-  tm <- data.table::data.table(time_temp = as.numeric(time_truth) ) # vector of times we want to align with (photometry times) -- ground truth time
+  # vector of times we want to align with ground truth (photometry times)
+  tm <- data.table::data.table(time_temp = as.numeric(time_truth) )
   tm[, time_aligned := time_truth]
 
-  data.table::setkeyv(data_new, name) # column name in data file that we want to align to be consistent with photometry (the ground truth time)
+  # column name in data file that we want to align to ground truth
+  data.table::setkeyv(data_new, name)
   data.table::setkeyv(tm, c('time_temp'))
 
   data_new <- as.data.frame( tm[data, roll='nearest'] )

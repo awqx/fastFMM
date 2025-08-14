@@ -17,7 +17,8 @@ knitr::opts_chunk$set(
 ```
 
 ```{r setup}
-library(fastFMM)
+suppressMessages(library(fastFMM))
+suppressMessages(library(dplyr))
 ```
 
 ## Introduction
@@ -28,9 +29,9 @@ library(fastFMM)
 
 While `fastFMM` is available on CRAN, the development version of the package can be downloaded from [GitHub](https://github.com/gloewing/fastFMM):
 
-```{r, eval = FALSE}
+```{r install github, eval = FALSE}
 if (!require("devtools")) install.packages("devtools")
-devtools::install_github("gloewing/fastFMM", dependencies = T)
+devtools::install_github("awqx/fastFMM", dependencies = T)
 ```
 
 ### Fast univariate inference (FUI)
@@ -72,50 +73,198 @@ The function `fastFMM::fui` requires that data be presented in a long format, i.
 
 ```{r read lick}
 # Replace this with a package call
-lick <- load(file = "../data/lick.rda", verbose = T)
+lick <- fastFMM::lick
 ```
 
 ### Data formatting
 
-The columns `id, session, trial` correspond to trial-level covariates. The functional outcome of `photometry` is stored in the columns `photometry_1, photometry_2, ..., photometry_50` and the functional covariate `lick` is stored in the columns `lick_1, lick_2, ..., lick_50`. The `lick` dataset importable through `fastFMM` is a downsampled version of the original, containing half as many trials and half as many recording timepoints. 
+The columns `id, session, trial` correspond to trial-level covariates. The functional outcome of `photometry` is stored in the columns `photometry_1, photometry_2, ..., photometry_43` and the functional covariate `lick` is stored in the columns `lick_1, lick_2, ..., lick_43`. The `lick` dataset importable through `fastFMM` is a downsampled version of the original, containing half as many trials and half as many recording timepoints. 
 
-We also provide the option to save functional outcomes and covariates as `AsIs` matrix columns. There are no particular differences between these two data structures. Below is an example of how an `AsIs` matrix column might be created.
+We also provide the option to save functional outcomes and covariates as `AsIs` matrix columns. There are no particular modeling differences between these two data structures. Below is an example of how an `AsIs` matrix column might be created.
 
 ```{r lick asis, eval = F}
-# AX: fix this
 library(dplyr)
-lick_asis <- lick %>%
-  mutate(
-    photometry = matrix(dplyr::select(lick, photometry_1:photometry_43)))
-  ) %>%
-  select(-photometry_1:-photometry_50, -lick_1:-lick_43)
+lick_mat <- as.matrix(
+  dplyr::select(lick, lick_1:lick_43)
+)
+photometry_mat <- as.matrix(
+  dplyr::select(lick, photometry_1:photometry_43)
+)
+
+# I() makes the columns "AsIs"
+lick_asis <- data.frame(
+  id = lick$id, 
+  trial = lick$trial, 
+  session = lick$session, 
+  lick = I(lick_mat), 
+  photometry = I(photometry_mat)
+)
 ```
 
-In the remainder of this tutorial, we will continue to use the original data frame `lick`. Below is an excerpt from `lick`, ignoring the columns containing scalar trial-specific covariates.
+In the remainder of this tutorial, we will continue to use the original data frame `lick`. 
+
+### Scalar covariates
+
+In this dataset, we calculated `lick_rate_NNN` as an example trial-specific behavioral summary. The covariate `lick_rate_NNN` is the average licking rate in the `NNN` hundredths of seconds after the reward is delivered. E.g., `lick_rate_050` is the average licking rate 0.5 seconds after reward delivery. We provide calculated lick rates for four different time periods (0.5, 1.0, 1.5, and 2.0 seconds). We also provide the covariate `iri`, which corresponds to the inter-reward interval, though we do not model with it in this vignette.
+
+```{r see scalars, echo = F}
+knitr::kable(lick[1:3, 1:7])
+```
+
+### Functional covariates
+
+Below is an excerpt from `lick`, ignoring the columns containing scalar trial-specific covariates.
 
 ```{r lick colnames, echo = F}
-knitr::kable(head(lick[, 1:12] %>% select(-lick_rate_050:-iri)))
+knitr::kable(
+  lick %>%
+    select(id:trial, photometry_1:photometry_3, lick_1:lick_3) %>%
+    .[1:5, ]
+)
 ```
 
-The data frame `lick` has $N = \sum_{i = 1}^I n_i$ rows, where $n_i$ is the number of repeated measures observations of subject/cluster $i$. The first three columns of the dataset include the covariates subject ID (`id`), session number (`session`), and trial number (`trial`). Each of the remaining columns are observations of our functional outcome named $[\texttt{photometry_1}, \; \texttt{photometry_2}, \dots, \; \texttt{photometry_L}]$, where $L$ is the size of the functional domain. The prefix `photometry_` is arbitrary and can be replaced with any convenient outcome name. However, because `fastFMM::fui` uses initial string matching to find functional outcome and covariate columns, the identifying prefix substring should be unique and not shared with any other columns. Furthermore, `fastFMM::fui` assumes any functional columns are ordered from left to right. 
+The data frame `lick` has $N = \sum_{i = 1}^I n_i$ rows, where $n_i$ is the number of repeated measures observations of subject/cluster $i$. The first three columns of the dataset include the covariates subject ID (`id`), session number (`session`), and trial number (`trial`). The functional outcome and covariate (`photometry` and `lick`, respectively) are stored in $L$ columns each, where $L$ is the size of the functional domain. The prefixes `photometry` and `lick` are arbitrary and can be replaced with any convenient outcome name. However, because `fastFMM::fui` uses initial string matching to find functional outcome and covariate columns, the identifying prefix substring should be unique and not shared with any other columns. Furthermore, `fastFMM::fui` assumes any functional columns are ordered from left to right. 
 
-## Non-concurrent FMM fitting
+## Model-fitting
 
-In this dataset, we will use `lick_rate_NNN` as an example trial-specific behavioral summary. The covariate `lick_rate_NNN` is calculated as the average licking rate in the `NNN` hundredths of seconds after the reward is delivered. E.g., `lick_rate_050` is the average licking rate 0.5 seconds after reward delivery. We provide calculated lick rates for four different time periods (0.5, 1.0, 1.5, and 2.0 seconds). 
+Unless otherwise specified, `fastFMM::fui()` assumes a Gaussian family and provides inference based on an analytic form. To bootstrap confidence intervals, set the argument `analytic = FALSE`. The number of bootstrap replicates can be set with the argument `boot`, which defaults to `boot = 500`. 
+Both analytic and bootstrap inference can be sped up substantially by parallelizing the univariate model-fitting with `parallel = TRUE`. The number of cores is calculated as `round(parallel::detectCores() * 0.75)` by default but can also be specified in `n_cores`. To speed up model comparisons, variance calculation can be skipped entirely by setting `var = F`. `AIC` and `BIC` will still be naturally outputted in the model objects. 
 
-```{r lick cov names, echo = F}
-knitr::kable(lick[1:5, 1:7])
+`fastFMM::fui()` uses the same mixed model formula structure as `lme4::lmer()`. The `family` argument is the standard GLM family from `R` `stats::glm()`. `fastFMM` allows for any family in the `glmer()` and `lmer()` functions offered by the `lme4` package. For any complex random effect structures (e.g., nested) or when more than one variable is specified on the right hand side of the `|` symbol in the random effects formula , the column name in the `data` data.frame corresponding to the subject-ID should be specified in the argument `subj_ID` to avoid any confusion. E.g., for a model with the random effect structure `(1 | id / trial)`, we would provide `fui()` with the argument `subj_ID = "id"`. 
+
+Providing a vector of indices of the functional outcome to `argvals` can be used to downsample model-fitting to only a subset of the functional domain. For example, `argvals = seq(from = 1, to = L, by = 3)` analyzes every third point of the functional outcome.
+
+### Non-concurrent FMM fitting
+
+The function `fastFMM::fui` assumes models are non-concurrent by default. We can generate a few candidate models and compare their AIC/BIC as follows:
+
+```{r candidate models}
+mod1 <- fui(
+  photometry ~ lick_rate_050 + (1 | id), 
+  data = lick, var = F, silent = T 
+)
+
+mod2 <- fui(
+  photometry ~ lick_rate_050 + (lick_rate_050 | id), 
+  data = lick, var = F, silent = T 
+)
+
+mod3 <- fui(
+  photometry ~ lick_rate_050 + trial + session + (lick_rate_050 | id), 
+  data = lick, var = F, silent = T 
+)
+
+temp <- list(mod1, mod2, mod3)
+dummy <- lapply(
+  1:length(temp), 
+  function(x) {
+    message(
+      "Model ", x, " AIC: ", 
+      round(mean(temp[[x]]$aic[, "AIC"]), digits = 1), "\t",
+      "BIC: ", round(mean(temp[[x]]$aic[, "BIC"]), digits = 1)
+    )
+  }
+)
 ```
 
-Creating a FLMM follows the general formulat
+We will use Model 3 to demonstrate variance calculation. 
 
-```{r}
+```{r lick_rate_050}
 # AX: fix printing of test message
-lick_prob_050 <- fastFMM::fui(
-  photometry ~ lick_rate_050 + trial + session + (lick_rate_050|id), 
+lick_rate_050 <- fui(
+  photometry ~ lick_rate_050 + trial + session + (lick_rate_050 | id), 
   data = lick
 )
 ```
 
+### Concurrent FMM fitting
 
-## Concurrent FMM fitting
+To fit a concurrent model, set the argument `concurrent = T`. `fastFMM::fui()` will automatically detect which covariates are functional based on matching their names. We will skip over AIC/BIC calculation for brevity and fit a concurrent model with variance calculation. Importantly, we need to remove the scaalar covariates `lick_rate_NNN` before model fitting because their names will interfere with detecting the columns for `lick`. Bootstrapped variance calculation is currently not compatible with concurrent modeling.
+
+```{r lick_conc}
+lick_ <- dplyr::select(lick, -lick_rate_050:-lick_rate_200)
+lick_conc <- fui(
+  photometry ~ lick + trial + session + (lick | id), 
+  data = lick_, 
+  concurrent = T, 
+  parallel = T, 
+  n_cores = 4
+)
+```
+
+## Plotting models
+
+After fitting a model, one can quickly visualize estimates and 95% confidence intervals with the function `fastFMM::plot_fui()`, which works for both non-concurrent and concurrent models. For now, the label for the functional covariate's fixed coefficients inherit the first instance of the covariate. However, the plotted coefficients reflect `lick_1` to `lick_43`. 
+
+```{r plot models, fig.width = 6, fig.height = 4}
+dummy <- fastFMM::plot_fui(lick_rate_050)
+dummy <- fastFMM::plot_fui(lick_conc)
+```
+
+The x-axis can be translated and scaled with the arguments `x_rescale` and `x_align`. For example, because the x-axis is time in these models, we can rescale the x-values based on sampling rate and align 0 with the trial start time. Furthermore, the number of rows in the plot can be adjusted with `nrow`. Each coefficient's plot can be given a plot title through the vector argument `title_names` and the x-axis can be named through the `xlab` argument.
+
+```{r x axis, fig.width = 6, fig.height = 4}
+align_time <- 0.4 # cue onset is at 2 seconds
+sampling_Hz <- 12.5 # sampling rate
+# plot titles: interpretation of beta coefficients
+plot_names <- c("Intercept", "Lick(s)", "Trial", "Session") 
+lick_conc_outs <- plot_fui(
+  lick_conc,
+  x_rescale = sampling_Hz, # rescale x-axis to sampling rate
+  align_x = align_time, # align to cue onset
+  title_names = plot_names,
+  xlab = "Time (s)",
+  num_row = 2, 
+  return = T
+) 
+```
+
+By setting `return = T`, the regression coefficient estimates and associated pointwise and joint 95% confidence intervals are outputted from the `plot_fui()` function as a list with $p + 1$ elements, one for each fixed effect and an extra entry for plotting details. Each element in that list (named according to the corresponding fixed effects covariate) is an $L \times L$ data-frame of coefficient estimates and 95% CIs (recall that $L$ is the size of the functional domain).
+
+```{r see outs}
+names(lick_conc_outs)
+```
+
+## Advanced Options
+
+### Additional `fui()` arguments
+
+- `silent` (default `FALSE`) controls whether `fui()` outputs the status of the code at each step.
+- `nknots_min` (default is $L/2$) sets the number of knots for smoothing.
+- `smooth_method` (default `"GCV.Cp"`) sets the method for tuning the smoothing hyperparameter (see `mgcv` package for more information). Options are `GCV` and `GCV.Cp` and `REML`.
+- `splines` (default `"tp"`) controls the type of spline. See the `smooth.terms` page from the `mgcv` package for more information. Options include `"tp"`, `"ts"`, `"cr"`, `"cs"` `"te"`, `"ds"`, `"bs"`, `"gp"`, etc. 
+- `design_mat` (default `FALSE`) specifies whether the design matrix is returned.
+- `residuals` (default `FALSE`) specifies whether the residuals of the univariate GLMM fits are returned.
+- `G_return` (default `FALSE`) specifies whether the covariance matrices $G()$ are returned. See [Cui et al. (2022)](https://doi.org/10.1080/10618600.2021.1950006) for more information. 
+- `caic` (default `FALSE`) specifies whether [conditional AIC](https://cran.r-project.org/web/packages/cAIC4/cAIC4.pdf) model fit criteria are returned alongside `AIC` and `BIC`.
+- `REs` (default `FALSE`) specifies whether the BLUP random effect estimates from the univariate GLMM fits are returned. These estimates are directly taken from the output of `lmer()` and `glmer()`.
+- `non_neg` (default `non_nef = 0`) specifies whether any non-negativity constraints are placed on variance terms in the Method of Moments estimator for $G()$. We recommend keeping this at its default.
+- `MoM` (default `MoM = 1`) specifies the type of Method of Moments estimator for $G()$. `MoM = 2` saves all random effects for the covariance matrix calculation, providing more guaranteed statistical performance at the cost of computational burden. Concurrent models can only use `MoM = 1`.
+
+### Additional `plot_fui()` arguments
+
+-   `num_row` specifies the number of rows the plots will be displayed on. Defaults to $p/2$
+-   `align_x` aligns the plot to a certain point on the functional domain and sets this as \`\`0.'' This is particularly useful if time is the functional domain. Defaults to 0.
+-   `x_rescale` rescales the x-axis of plots which is especially useful if time is the functional domain and one wishes to, for example, account for the sampling rate. Defaults to 1.
+-   `title_names` Allows one to change the titles of the plots. Takes in a vector of strings. Defaults to NULL which uses the variable names in the dataframe for titles.
+-   `y_val_lim` is a positive scalar that extends the y-axis by a factor for visual purposes. Defaults to $1.10$. Typically does not require adjustment.
+-   `ylim` takes in a $2 \times 1$ vector that specifies limits of the y-axis in plots.
+-   `y_scal_orig` a positive scalar that determines how much to reduce the length of the y-axis on the bottom. Typically does not require adjustment. Defaults to 0.05.
+-   `xlab` takes in a string for the x-axis title (i.e., the functional domain). Defaults to \`\`Time (s)''
+
+## Troubleshooting
+
+- You are welcome to contact us about `fastFMM` at [gloewinger\@gmail.com](mailto:gloewinger@gmail.com){.email} with any questions or error reports.
+- This GitHub account [gloewing/fastFMM](https://github.com/gloewing/fastFMM) hosts the development version of fastFMM and can also be used to submit issues.
+- The following warning messages can occur
+  - `Warning messages: 1: In sqrt(Eigen\$values) : NaNs produced` -- this can occur when using bootstrap confidence intervals because of the used functional PCA functions. It can be safely ignored.
+  - `Warning in checkConv(attr(opt, "derivs"), opt, ctrl = control checkConv: Model failed to converge with max|grad` -- this is a`lme4\` warning message: for data sets with many observations or for models with many parameters (e.g., random effects, fixed effects), convergence warnings are not uncommon. This warning message comes from point-wise mixed model fits. Therefore if these warnings are issued for many points along the functional domain, you may want to consider your fixed or random effect specification. If the warning is only issued for a few points on the functional domain, you may not need to alter your model specification.
+  - `Warning in checkConv(attr(opt, "derivs"), opt.par, ctrl = control.checkConv, : Model is nearly unidentifiable: very large eigenvalue: - Rescale variables? Model is nearly unidentifiable: large eigenvalue ratio` -- This is a`lme4`warning message --This warning can frequently be resolved by scaling continuous covariates, for example, with the command`scale()`--For more information on the`lme4\` package, warning messages, model syntax and general mixed modeling information, see: Doug Bates. [lme4: Mixed-effects modeling with R](https://stat.ethz.ch/~maechler/MEMo-pages/lMMwR.pdf) (2022).
+
+## References
+
+Doug Bates. [lme4: Mixed-effects modeling with R](https://stat.ethz.ch/~maechler/MEMo-pages/lMMwR.pdf) (2022).
+
+Erjia Cui, Andrew Leroux, Ekaterina Smirnova, and Ciprian Crainiceanu. [Fast Univariate Inference for Longitudinal Functional Models](https://doi.org/10.1080/10618600.2021.1950006). Journal of Computational and Graphical Statistics (2022).
+
+Alison W Xin, Erjia Cui, Francisco Pereira, Gabriel Loewinger. Extending fast functional mixed models to concurrent photometry analysis. biorXiv (2025). 
