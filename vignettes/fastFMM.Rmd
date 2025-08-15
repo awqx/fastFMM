@@ -1,5 +1,5 @@
 ---
-title: "fastFMM: Functional mixed models with fast univariate inference"
+title: "Introduction to fastFMM model fitting"
 output: rmarkdown::html_vignette
 author: Gabriel Loewinger, Erjia Cui, Alison W Xin
 date: "`r Sys.Date()`"
@@ -23,7 +23,7 @@ suppressMessages(library(dplyr))
 
 ## Introduction
 
-`fastFMM` is a toolkit for fitting functional mixed models (FMMs) and implements the fast univariate inference (FUI) method proposed in [Cui et al. (2022)](https://doi.org/10.1080/10618600.2021.1950006). In this vignette, we provide a tutorial on how to use the `fui` function to fit non-concurrent and concurrent FMMs. 
+`fastFMM` is a toolkit for fitting functional mixed models (FMMs) and implements the fast univariate inference (FUI) method proposed in [Cui et al. (2022)](https://doi.org/10.1080/10618600.2021.1950006) and further described in [Loewinger et al. (2024)](https://doi.org/10.7554/eLife.95802.2) and Xin et al. (2025). In this vignette, we provide a tutorial on how to use the `fui` function to fit non-concurrent and concurrent FMMs. 
 
 ### Installation
 
@@ -31,7 +31,7 @@ While `fastFMM` is available on CRAN, the development version of the package can
 
 ```{r install github, eval = FALSE}
 if (!require("devtools")) install.packages("devtools")
-devtools::install_github("awqx/fastFMM", dependencies = T)
+devtools::install_github("awqx/fastFMM", dependencies = TRUE)
 ```
 
 ### Fast univariate inference (FUI)
@@ -61,26 +61,25 @@ where $\boldsymbol{\beta}(s_l)$ is a $p \times 1$ dimensional vector of fixed ef
 2. *Smooth coefficients*. Using penalized splines, aggregate and smooth the coefficient estimates $\boldsymbol{\tilde{\beta}}(s_1), \boldsymbol{\tilde{\beta}}(s_2), ..., \boldsymbol{\tilde{\beta}}(s_L)$ to produce estimates $\{\boldsymbol{\hat{\beta}}(s), s \in \mathcal{S}\}$. 
 3. *Build pointwise and joint confidence intervals*. Combine the within-timepoint variance and the between-timepoint covariance to create confidence bands around the smoothed estimates from Step 2. For Gaussian data, we can obtain these estimates analytically. For other distributions, we implement cluster bootstrap. 
 
-FUI decomposes the complex correlation structure into longitudinal and functional directions, allowing for a computationally efficient estimation procedure. For more details on the analytic and bootstrap approach, refer to [Cui et al. (2022)](https://doi.org/10.1080/10618600.2021.1950006).
+FUI decomposes the complex correlation structure into longitudinal and functional directions, allowing for a computationally efficient estimation procedure. [Cui et al. (2022)](https://doi.org/10.1080/10618600.2021.1950006) contains additional details on the theoretical derivation of the analytic and bootstrap approach to model fitting. We also extend the analytic approach to general random effects specifications in [Loewinger et al. (2024)](https://doi.org/10.7554/eLife.95802.2) and concurrent model fitting in Xin et al. (2025).
 
 ### Additional references
 
 We describe applications of `fastFMM` to photometry signal analysis in [Loewinger et al. (2024)](https://doi.org/10.7554/eLife.95802.2) and Xin et al. (2025). In Loewinger et al. (2024), we detailed advantages of functional mixed modeling over conventional photometry analysis methods, including the ability to generate hypothesis tests at every trial timepoint, incorporate the photometry signal for every animal and trial, capture nested effects, and compare temporal dynamics. In Xin et al. (2025), we focused on the extension of the FUI method to concurrent FMMs and described particular cases where concurrent FMMs produce more interpretable coefficient estimates.
 
-## Reading data
+## Data organization
 
 The function `fastFMM::fui` requires that data be presented in a long format, i.e., with columns corresponding to locations on the functional domain $1, 2, \dots, L$ and with rows corresponding to longitudinal observations $t_{i, j}$. For example, within `fastFMM`, we provide the pre-formatted dataset `lick`, sourced from [Jeong et al. (2022)](https://doi.org/10.1126/science.abq6740). 
 
 ```{r read lick}
-# Replace this with a package call
 lick <- fastFMM::lick
 ```
 
-### Data formatting
+### General formatting
 
-The columns `id, session, trial` correspond to trial-level covariates. The functional outcome of `photometry` is stored in the columns `photometry_1, photometry_2, ..., photometry_43` and the functional covariate `lick` is stored in the columns `lick_1, lick_2, ..., lick_43`. The `lick` dataset importable through `fastFMM` is a downsampled version of the original, containing half as many trials and half as many recording timepoints. 
+The columns `id, session, trial` correspond to trial-level covariates. The functional outcome of `photometry` is stored in the columns `photometry_1, photometry_2, ..., photometry_43` and the functional covariate `lick` is stored in the columns `lick_1, lick_2, ..., lick_43`. The `lick` dataset importable through `fastFMM` is a downsampled version of the original, containing half as many trials and half as many within-trial timepoints.
 
-We also provide the option to save functional outcomes and covariates as `AsIs` matrix columns. There are no particular modeling differences between these two data structures. Below is an example of how an `AsIs` matrix column might be created.
+We provide the option to save functional outcomes and covariates as `AsIs` matrix columns. There are no particular modeling differences between these two data structures. Below is an example of how an `AsIs` matrix column might be created.
 
 ```{r lick asis, eval = F}
 library(dplyr)
@@ -128,7 +127,8 @@ The data frame `lick` has $N = \sum_{i = 1}^I n_i$ rows, where $n_i$ is the numb
 ## Model-fitting
 
 Unless otherwise specified, `fastFMM::fui()` assumes a Gaussian family and provides inference based on an analytic form. To bootstrap confidence intervals, set the argument `analytic = FALSE`. The number of bootstrap replicates can be set with the argument `boot`, which defaults to `boot = 500`. 
-Both analytic and bootstrap inference can be sped up substantially by parallelizing the univariate model-fitting with `parallel = TRUE`. The number of cores is calculated as `round(parallel::detectCores() * 0.75)` by default but can also be specified in `n_cores`. To speed up model comparisons, variance calculation can be skipped entirely by setting `var = F`. `AIC` and `BIC` will still be naturally outputted in the model objects. 
+
+Both analytic and bootstrap inference can be sped up by parallelizing the univariate model-fitting with `parallel = TRUE`. For analytic variance calculation, `parallel = TRUE` also parallelizes the calculation of the fixed effects covariance matrix. The number of cores is calculated as `round(parallel::detectCores() * 0.75)` by default but can also be specified in `n_cores`. To speed up model comparisons, variance calculation can be skipped entirely by setting `var = FALSE`. `AIC` and `BIC` will still be naturally outputted in the model objects. 
 
 `fastFMM::fui()` uses the same mixed model formula structure as `lme4::lmer()`. The `family` argument is the standard GLM family from `R` `stats::glm()`. `fastFMM` allows for any family in the `glmer()` and `lmer()` functions offered by the `lme4` package. For any complex random effect structures (e.g., nested) or when more than one variable is specified on the right hand side of the `|` symbol in the random effects formula , the column name in the `data` data.frame corresponding to the subject-ID should be specified in the argument `subj_ID` to avoid any confusion. E.g., for a model with the random effect structure `(1 | id / trial)`, we would provide `fui()` with the argument `subj_ID = "id"`. 
 
@@ -139,21 +139,26 @@ Providing a vector of indices of the functional outcome to `argvals` can be used
 The function `fastFMM::fui` assumes models are non-concurrent by default. We can generate a few candidate models and compare their AIC/BIC as follows:
 
 ```{r candidate models}
+# Random intercept 
 mod1 <- fui(
   photometry ~ lick_rate_050 + (1 | id), 
-  data = lick, var = F, silent = T 
+  data = lick, var = FALSE, silent = TRUE 
 )
 
+# Random slope and intercept
 mod2 <- fui(
   photometry ~ lick_rate_050 + (lick_rate_050 | id), 
-  data = lick, var = F, silent = T 
+  data = lick, var = FALSE, silent = TRUE 
 )
 
+# Fixed effects for trial and session, radom intercept and slope
 mod3 <- fui(
   photometry ~ lick_rate_050 + trial + session + (lick_rate_050 | id), 
-  data = lick, var = F, silent = T 
+  data = lick, var = FALSE, silent = TRUE 
 )
+```
 
+```{r candidate model AIC, echo = F}
 temp <- list(mod1, mod2, mod3)
 dummy <- lapply(
   1:length(temp), 
@@ -167,28 +172,30 @@ dummy <- lapply(
 )
 ```
 
-We will use Model 3 to demonstrate variance calculation. 
+Once we select a model (here, we choose Model 3), we can run the full analytic variance calculation by removing `var = FALSE`. We show the results in the section "Plotting models".
 
 ```{r lick_rate_050}
-# AX: fix printing of test message
 lick_rate_050 <- fui(
   photometry ~ lick_rate_050 + trial + session + (lick_rate_050 | id), 
-  data = lick
+  data = lick, 
+  silent = TRUE
 )
 ```
 
 ### Concurrent FMM fitting
 
-To fit a concurrent model, set the argument `concurrent = T`. `fastFMM::fui()` will automatically detect which covariates are functional based on matching their names. We will skip over AIC/BIC calculation for brevity and fit a concurrent model with variance calculation. Importantly, we need to remove the scaalar covariates `lick_rate_NNN` before model fitting because their names will interfere with detecting the columns for `lick`. Bootstrapped variance calculation is currently not compatible with concurrent modeling.
+To fit a concurrent model, set the argument `concurrent = TRUE`. `fastFMM::fui()` will automatically detect which covariates are functional based on matching their names. We will skip over AIC/BIC calculation for brevity and fit a concurrent model with variance calculation. Importantly, we need to remove the scalar covariates `lick_rate_NNN` before model fitting because their names will interfere with detecting the columns for `lick`. Bootstrapped variance calculation is currently not compatible with concurrent modeling.
 
 ```{r lick_conc}
+# Remove conflicting columns
 lick_ <- dplyr::select(lick, -lick_rate_050:-lick_rate_200)
 lick_conc <- fui(
   photometry ~ lick + trial + session + (lick | id), 
   data = lick_, 
-  concurrent = T, 
-  parallel = T, 
-  n_cores = 4
+  concurrent = TRUE, 
+  parallel = TRUE, 
+  n_cores = 4, 
+  silent = TRUE
 )
 ```
 
@@ -197,6 +204,7 @@ lick_conc <- fui(
 After fitting a model, one can quickly visualize estimates and 95% confidence intervals with the function `fastFMM::plot_fui()`, which works for both non-concurrent and concurrent models. For now, the label for the functional covariate's fixed coefficients inherit the first instance of the covariate. However, the plotted coefficients reflect `lick_1` to `lick_43`. 
 
 ```{r plot models, fig.width = 6, fig.height = 4}
+# Sending outputs to a dummy variable makes the output cleaner
 dummy <- fastFMM::plot_fui(lick_rate_050)
 dummy <- fastFMM::plot_fui(lick_conc)
 ```
@@ -215,11 +223,11 @@ lick_conc_outs <- plot_fui(
   title_names = plot_names,
   xlab = "Time (s)",
   num_row = 2, 
-  return = T
+  return = TRUE
 ) 
 ```
 
-By setting `return = T`, the regression coefficient estimates and associated pointwise and joint 95% confidence intervals are outputted from the `plot_fui()` function as a list with $p + 1$ elements, one for each fixed effect and an extra entry for plotting details. Each element in that list (named according to the corresponding fixed effects covariate) is an $L \times L$ data-frame of coefficient estimates and 95% CIs (recall that $L$ is the size of the functional domain).
+By setting `return = TRUE`, the regression coefficient estimates and associated pointwise and joint 95% confidence intervals are outputted from the `plot_fui()` function as a list with $p + 1$ elements, one for each fixed effect and an extra entry for plotting details. Each element in that list (named according to the corresponding fixed effects covariate) is an $L \times L$ data-frame of coefficient estimates and 95% CIs (recall that $L$ is the size of the functional domain).
 
 ```{r see outs}
 names(lick_conc_outs)
@@ -266,5 +274,7 @@ names(lick_conc_outs)
 Doug Bates. [lme4: Mixed-effects modeling with R](https://stat.ethz.ch/~maechler/MEMo-pages/lMMwR.pdf) (2022).
 
 Erjia Cui, Andrew Leroux, Ekaterina Smirnova, and Ciprian Crainiceanu. [Fast Univariate Inference for Longitudinal Functional Models](https://doi.org/10.1080/10618600.2021.1950006). Journal of Computational and Graphical Statistics (2022).
+
+Gabriel Loewinger, Erjia Cui, David Lovinger, Francisco Pereira. [A Statistical Framework for Analysis of Trial-Level Temporal Dynamics in Fiber Photometry Experiments](https://doi.org/10.7554/eLife.95802.2). eLife Neuroscience (2024).
 
 Alison W Xin, Erjia Cui, Francisco Pereira, Gabriel Loewinger. Extending fast functional mixed models to concurrent photometry analysis. biorXiv (2025). 
