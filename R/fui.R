@@ -196,8 +196,11 @@ fui <- function(
   fun_covariates <- NULL # redundancy
   fun_covariates <- unique(c(x_names[x_classes == "AsIs"], x_names[x_ncols == L]))
   fun_exists <- length(fun_covariates) > 0
-  if (fun_exists)
-    message("Functional covariate(s): ", paste0(fun_covariates, collapse = ", "))
+  if (fun_exists & !silent)
+    message(
+      "Functional covariate(s): ",
+      paste0(fun_covariates, collapse = ", ")
+    )
   # Check for inconsistencies with user-set concurrence argument
   if (concurrent & !fun_exists) {
     stop(

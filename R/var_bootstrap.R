@@ -49,6 +49,29 @@ var_bootstrap <- function(
 
   if (!silent) message("Step 3: Inference (Bootstrap)")
 
+  # 0 Warnings #################################################################
+
+  if (fmm$concurrent) {
+    if (!silent) {
+      warning(
+        "Bootstrap CI coverage has not been tested with concurrent models.", "\n",
+        "Proceed with caution for variance/CI estimates."
+      )
+    }
+
+    # Reset bootstrap type to cluster
+    if (boot_type != "cluster") {
+      if (!silent) {
+        warning(
+          "Estimation is only compatible with `boot_type == 'cluster`.", "\n",
+          "Calculation will proceed with `cluster`."
+        )
+      }
+
+      boot_type <- "cluster"
+    }
+  }
+
   # 1 Generate resamplings #####################################################
 
   # Check to see if group contains ":" which indicates hierarchical structure
@@ -148,7 +171,8 @@ var_bootstrap <- function(
         splines = splines,
         residuals = fmm$residuals,
         subj_id = mum$subj_id,
-        n_cores = n_cores
+        n_cores = n_cores,
+        concurrent = fmm$concurrent
       )
       # Save fixed coefficients
       betaHat_boot[, , b] <- fit_boot$betaHat

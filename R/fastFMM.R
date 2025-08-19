@@ -46,7 +46,8 @@ new_fastFMM <- function(
     residuals = residuals,
     caic = caic,
     randeffs = randeffs,
-    analytic = analytic
+    analytic = analytic,
+    concurrent = FALSE
   )
 
   ### Populate other parameters
@@ -163,6 +164,7 @@ new_fastFMMconc <- function(
     var,
     analytic
   )
+  fmm$concurrent <- TRUE
   # Add field for functional covariates
   fmm$fun_covariates <- fun_covariates
   class(fmm) <- c("fastFMMconc", "fastFMM")
