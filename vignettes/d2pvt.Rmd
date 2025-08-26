@@ -10,7 +10,8 @@ vignette: >
 ```{r, include = FALSE}
 knitr::opts_chunk$set(
   collapse = TRUE,
-  comment = "#>"
+  comment = "#>", 
+  eval = FALSE
 )
 ```
 
@@ -25,17 +26,17 @@ suppressMessages(library(dplyr))
 
 ## Experimental design
 
-For this vignette, we sourced data from "The encoding of interoceptive-based predictions by the paraventricular nucleus of the thalamus D2+ neurons" ([Machen et al. (2025)](https://doi.org/10.1101/2025.03.10.642469)). Machen et al. recorded photometry signals from mice in a foraging-like task. Experimenters placed mice in a corridor and provided a reward if the mice arrived in a reward zone at the end of the corridor. The researchers experimented with different types of rewards and whether mice were hungry or satiated. For simplicity, we will focus on comparing the signal associated with strawberry milkshake (SMS) versus water.
+For this vignette, we sourced data from "The encoding of interoceptive-based predictions by the paraventricular nucleus of the thalamus D2+ neurons" ([Machen et al. (2025)](https://doi.org/10.1101/2025.03.10.642469)). Machen et al. recorded photometry signals from mice in a foraging-like task. Experimenters placed mice in a corridor and provided a reward if the mice arrived in a reward zone at the end of the corridor. The researchers experimented with different types of rewards and whether mice were hungry or satiated. For simplicity, we will focus on comparing the signal associated with receiving a strawberry milkshake reward (SMS) versus a water reward.
 
 ### Variable trial lengths
 
-For this experiment, we want trials to include both the approaching phase and reward phase of the experiment. However, defining trials based on reward latency introduces variation in the trial lengths. Standard methods of summarizing over the trials (such as AUC, averaging, or summing) can thus produce bias. In this vignette, we will compare two different modeling approaches with `fastFMM::fui()`. First, we incorporate reward latency as a scalar covariate in a non-concurrent functional mixed model. Second, we incorporate a functional covariate corresponding to whether the mouse has received the reward in a trial and include an interaction between the reward type and the functional covariate. Within Xin et al. (2025), we also include a comparison with two different non-functional linear mixed models, though we skip these here for brevity.
+For this experiment, we want trials to include both the approaching phase and reward phase of the experiment. However, defining trials based on reward latency introduces variation in the trial lengths. Standard methods of summarizing over the trials (such as AUC, averaging, or summing) can complicate statistical analyses and the interpretation of results. In this vignette, we will compare two different modeling approaches with `fastFMM::fui()`. First, we incorporate reward latency as a scalar covariate in a non-concurrent functional mixed model. Second, we incorporate a functional covariate corresponding to whether the mouse has received the reward in a trial and include an interaction between the reward type and the functional covariate. Within Xin et al. (2025), we also include a comparison with two different non-functional linear mixed models, though we skip these here for brevity.
 
 ### Data processing
 
-We converted the scalar covariate of `Lat` (i.e., the time, in seconds, for a mouse to receive the reward in a given trial) to the functional covariate `RZ`. We set `RZ = 0` at trial timepoints earlier than `Lat` and `RZ = 1` for timepoints later than `Lat`. 
+We converted the scalar covariate of `Lat` (i.e., the time, in seconds, for a mouse to receive the reward in a given trial) to the functional covariate `RZ` (reward zone). We set `RZ = 0` at trial timepoints earlier than `Lat` and `RZ = 1` for timepoints later than `Lat`. We also translate and scale trial to the interval `[0, 1]` where 0 is Trial 0 and 1 is the maximum trial number across all mice.
 
-**Note**: We currently do not publish the complete raw data, so the provided vignette code is for demonstration purposes only and *will not run by default*. The remainder of this vignette will refer to the relevant dataset as `d2pvt`. 
+**Note**: We currently do not publish the complete raw data, so the provided vignette code is for demonstration purposes only and *will not run by default*. The remainder of this vignette will refer to the relevant data frame as `d2pvt`. 
 
 ```{r read d2pvt, echo = FALSE}
 d2pvt <- read.csv("../data/hidden/hsms_hh2o.csv") %>%
@@ -77,13 +78,21 @@ colnames(reward_df) <- gsub("^approaching", "RZ", colnames(approaching_df))
 d2pvt_nonzero <- cbind(d2pvt_nonzero, reward_df)
 ```
 
+```{r kable data, echo = FALSE}
+knitr::kable(
+  d2pvt_nonzero %>%
+    select(id, trial, session, Lat, RZ_45:RZ_50) %>%
+    head()
+)
+```
+
 ## Modeling
 
 Within this section, let $i$ index the mouse ID and $j$ index the trial. Furthermore, assume random effects and noise are Normally distributed, i.e., we can fit a Gaussian family model.
 
 ### Non-concurrent model with latency
 
-To incorporate latency as a scalar covariate, we specified the **non-concurrent** model
+To model the problem with the trial latency, we can specify the **non-concurrent** model
 
 $$
 Y_{i, j}(s) = 
@@ -99,23 +108,25 @@ where $Y_{i, j} (s)$ is the recorded photometry signal of mouse $i$, trial $j$, 
 We defined the scalar covariates
 
 - $\texttt{SMS}_{i, j}$: the trial outcome, where $\texttt{SMS}_{i, j} = 1$ for a trial with strawberry milkshake (SMS) and $\texttt{SMS}_{i, j} = 0$ for water, and
-- $\texttt{Lat}_{i, j}$: the latency, in seconds, until mouse $i$ in trial $j$ received the food reward.
+- $\texttt{Lat}_{i, j}$: the latency, in seconds, until mouse $i$ in trial $j$ received the food reward. To aid interpretation, we centered the latency values around the mean latency across all mice and trials.
 
-For ease of interpretation, we centered the latency values, so $\texttt{Lat}_{i, j, 2}$ is the difference between the latency in that trial and the average latency across all trials. For example, $\texttt{Lat}_{i, j} < 0$ when mouse $i$ in trial $j$ ran the corridor faster than average and $\texttt{Lat}_{i, j} > 0$ when mouse $i$ in trial $j$ ran slower than average. 
+<!-- For ease of interpretation, we centered the latency values, so $\texttt{Lat}_{i, j, 2}$ is the difference between the latency in that trial and the average latency across all trials. For example, $\texttt{Lat}_{i, j} < 0$ when mouse $i$ in trial $j$ ran the corridor faster than average and $\texttt{Lat}_{i, j} > 0$ when mouse $i$ in trial $j$ ran slower than average.  -->
 
 The random effects are
 
-- $\gamma_{i, 0}$: the random intercept for mouse $i$, interpreted as the average photometry signal of mouse $i$ on trials with water reward and average latency, and
-- $\gamma_{i, 1}$ the random slope for mouse $i$, interpreted as the subject-specific association between signal and the SMS reward for mouse $i$ on average latency, 
+- $\gamma_{i, 0}$: the random intercept for mouse $i$, interpreted as the average perturbation of $\beta_0 (s)$ for mouse $i$ on trials with water reward and average latency, and
+- $\gamma_{i, 1}$ the random slope for mouse $i$, interpreted as the subject-specific perturbation to $\beta_1 (s)$ on mouse $i$ with average latency,
 
 and the fixed effect coefficients are
 
-- $\beta_0 (s)$: the intercept when $\texttt{SMS}_{i, j} = \texttt{Lat}_{i, j} = 0$ at timepoint $s$, i.e., the mean signal at $s$ on water trials when a mouse responds with an average latency,
+- $\beta_0 (s)$: the mean signal at $s$ on water trials when a mouse responds with an average latency, i.e., the intercept when $\texttt{SMS}_{i, j} = \texttt{Lat}_{i, j} = 0$,
 - $\beta_1 (s)$: the mean difference in signals between SMS and water trials when a mouse responds with an average latency at timepoint $s$,
 - $\beta_2 (s)$: the change in mean signal associated with a one second increase in latency on water trials at timepoint $s$, and
-- $\beta_3 (s)$: the difference $A - B$ between A) the change in mean signal associated with a one second increase in latency on SMS trials and B) $\beta_2$ at timepoint $s$.
+- $\beta_3 (s)$: the difference $A - B$ between A) the change in mean signal associated with a one second increase in latency on SMS trials at timepoint $s$ and B) the change in the mean signal associated with a one second increase in latency on water trials at timepoint $s$ (i.e., $\beta_2 (s)$).
 
 We can fit the non-concurrent model as follows:
+
+**Note**: Fitting a non-concurrent model with `fastFMM::fui(..., concurrent = FALSE)` is the same FLMM fitting procedure implemented in the previous `fastFMM` package versions; see [Loewinger et al. (2024)](https://doi.org/10.7554/eLife.95802.2).
 
 ```{r fit nonco}
 nonconcurrent <- fastFMM::fui(
@@ -130,7 +141,7 @@ nonconcurrent <- fastFMM::fui(
 
 ### Concurrent model with reward zone
 
-As mentioned previously, we can convert the scalar covariate of `Lat` into the functional covariate `RZ`, where `RZ` is a function of the time point $s$ that is 1 when the mouse has received a reward by time point $s$ and 0 otherwise. We specified the **concurrent** model as
+As mentioned previously, we can convert the scalar covariate of `Lat` into the functional covariate `RZ`, where `RZ` is the behavioral time series on each trial indicating whether the mouse has received a reward. We specified the **concurrent** model as
 
 $$
 Y_{i, j}(s) = 
@@ -145,12 +156,12 @@ where $\texttt{RZ}_{i, j} (s)$ corresponds to `RZ` and  $\texttt{SMS}_{i, j}$ is
 
 In this model, the fixed effects are interpreted as:
 
-- $\beta_0(s)$: the intercept when $\texttt{RZ}_{i, j} (s) = \texttt{SMS}_{i, j} = 0$, i.e., the mean signal on a water trial at a timepoint $s$ when the reward has not yet been received, 
-- $\beta_1 (s)$: the mean difference in signal  between SMS and water trials at a timepoint $s$ when the reward has not yet been received, 
+- $\beta_0(s)$: the mean signal on a water trial at a timepoint $s$ when the reward has not yet been received, i.e., the intercept when $\texttt{RZ}_{i, j} (s) = \texttt{SMS}_{i, j} = 0$, 
+- $\beta_1 (s)$: the mean difference in signal between SMS and water trials at a timepoint $s$ when the reward has not yet been received, 
 - $\beta_2 (s)$: the average difference between approach and reward in water trials at time $s$, and
 - $\beta_3 (s)$: the difference in differences $A - B$ between A) the average signal difference between approach and reward on SMS trials, and B) the average difference in signal values between approach and reward on water trials (i.e., $\beta_2$), at trial timepoint $s$. 
 
-**Note**: The concurrent model cannot fit timepoints with zero variance, so we fit to the data `d2pvt_nonzero`, a subset of `d2pvt`. In this case, the functional covariate `RZ` is the same across all mice at the beginning and end of the trial.
+**Note**: The concurrent model cannot fit timepoints when the functional covariates do not vary across animals or trials (i.e., have zero variance), so we fit to the data `d2pvt_nonzero`, a subset of `d2pvt`. In this case, the functional covariate `RZ` is the same across all mice at the beginning and end of the trial.
 
 We fit the concurrent model as follows:
 
@@ -158,7 +169,6 @@ We fit the concurrent model as follows:
 concurrent <- fastFMM::fui(
   photometry ~ SMS * RZ + (SMS | id), 
   d2pvt_nonzero, 
-  # Uncomment this to make the model fit faster
   parallel = TRUE,
   concurrent = TRUE, 
   silent = TRUE
@@ -185,73 +195,85 @@ dummy <- fastFMM::plot_fui(
 )
 ```
 
-Although the above models use analogous covariates, they produce very different coefficient curves. 
+Although the concurrent and non-concurrent FLMM both model the association between photometry signal and mouse behavior, the two approaches yield different coefficient curves, highlighting the importance of the concurrent approach.
 
 ### Non-concurrent model coefficients
 
-Although the non-concurrent model shows strong trends in the coefficients, they can be somewhat confusing to interpret. For example, the dip in the estimated coefficients at around 3 seconds does not necessarily mean that mice with a slower-than-average latency will have a lower photometry response *when they reach the reward*. It could reflect that, in general, rewards increase the photometry signal magnitude and the slow mice *have not yet reached the reward zone*.
+Although the non-concurrent model shows strong trends in the coefficients, they can be hard to interpret. For example, the dip in the estimated coefficients at around 3 seconds does not necessarily mean that mice with a slower-than-average latency will have a lower photometry response *when they reach the reward*. It could reflect that, in general, rewards increase the photometry signal magnitude and the slow mice *have not yet reached the reward zone*.
 
-We can better illustrate this by referring back to the non-concurrent model, copied below for convenience (**note**: noise and random effects terms are omitted for brevity). 
+We can better illustrate this by referring back to the non-concurrent model, copied below for convenience. 
+
+**Note**: unlike the previous expression, we use the expectation form to avoid writing out the noise and random coefficient terms. Let $\mathbf{X}_{i, j} = [\texttt{SMS}_{i, j}, \texttt{Lat}_{i, j}]^T$ be the covariate matrix for mouse $i$ and trial $j$. In the below expectation form, we are considering the induced marginal mean of the outcome (i.e., marginalizing over the random effects such that their expectation is zeroed out from the expression).
+
+<!-- For the rest of the section, assume the expectation of the photometry signal for mouse $i$ and trial $j$, i.e., $\mathbb{E}[Y_{i, j} (s)]$, is implicitly conditioned on the covariate matrix $\mathbf{X}_i$, random effects matrix $\mathbf{Z}_i$, and random effects $\boldsymbol{\gamma}_i (s)$. That is, $\mathbb{E}[Y_{i, j} (s)] := \mathbb{E}[Y_{i} (s) | \mathbf{X}_i (s), \mathbf{Z}_i (s), \boldsymbol{\gamma}_i (s)]$ -->
 
 $$
-Y_{i, j}(s) = 
+\mathbb{E} [Y_{i, j}(s) \mid \mathbf{X}_{i, j}] = 
 \beta_0 (s) + 
 \beta_1 (s) \texttt{SMS}_{i, j} +
 \beta_2 (s) \texttt{Lat}_{i, j} + 
 \beta_3 (s) \texttt{SMS}_{i, j} \texttt{Lat}_{i, j},
 $$
 
-Let us select some arbitrary mouse $i = 1$ and assume that it runs trial $j = 10$ slower than average, i.e., $\texttt{Lat}_{1, 10} = c$, where $c$ is some positive constant. Let us also consider mouse $i = 2$ that runs trial $j = 10$ at the average speed, i.e., $\texttt{Lat}_{1, 10} = 0$. Assume both Mouse 1 and 2 are in water trials, i.e., $\texttt{SMS}_{i, 10} = 0$. Let us consider $s = 3$, which is close to the average trial length, and write the photometry signals for these mice as:
+Let us select some arbitrary mouse $i = 1$ and assume that it runs trial $j = 10$ slower than average, i.e., $\texttt{Lat}_{1, 10} = c, \; c > 0$. Let us also consider mouse $i = 2$ that runs trial $j = 10$ at the average speed, i.e., $\texttt{Lat}_{2, 10} = 0$. Assume both Mouse 1 and 2 are in water trials, i.e., $\texttt{SMS}_{i, 10} = 0$. Let us consider the photometry signal value at three seconds into the trial ($s = 3$), which is close to the average trial length. The average photometry signals for these mice are:
 
-$$
-Y_{1, 10}(3) = \beta_0 (3) + c \beta_2 (3),  \quad
-Y_{2, 10}(3) = \beta_0 (3).
-$$
+\begin{align*}
+\mathbb{E} [Y_{1, 10}(3) \mid \texttt{SMS}_{1, 10} = 0, \texttt{Lat}_{1, 10} = c > 0] &= \beta_0 (3) + c \beta_2 (3), \\
+\mathbb{E} [Y_{2, 10}(3) \mid \texttt{SMS}_{2, 10} = 0, \texttt{Lat}_{2, 10} = 0 ] &= \beta_0 (3) \\
+\mathbb{E} [Y_{1, 10}(3) \mid \mathbf{X}_{1, 10}]  &< \mathbb{E} [Y_{2, 10}(3) \mid \mathbf{X}_{2, 10} ] \quad (\textrm{presumed}) 
+\end{align*}
 
-It is important to note that the left equation (slow mouse) reflects the photometry signal of a mouse that has not yet reached the reward while the right equation is a mouse that has just received the reward. Thus, the negative contribution of $c \beta_2 (3)$ (recall: $\beta_2 (3) < 0$) could be interpreted as correcting for the intercept. 
+The first equation (slow mouse) reflects the expected photometry signal of a mouse that has not yet reached the reward while the second equation reflects a mouse that has just received the reward. Both equations contain $\beta_0 (3)$ (the intercept), but we presume that the slow mouse will have a lower expected signal at 3 seconds, when it has not yet reached the reward (bottom inequality). Thus, the negative contribution of $c \beta_2 (3)$ could be interpreted as offsetting the intercept for slow mice and is not meaningfully related to receiving the reward.
 
-The shape of the coefficient curve for the interaction `SMS:Lat` also shows a dip. However, it is not the case that this implies that slow mice exhibit decreased signal association with the SMS reward, on average. Consider some trial $j = 11$ where both Mouse 1 and 2 receive SMS. Again, let Mouse 1 run slower than average. We can write the photometry signals for these mice as
+The shape of the coefficient curve for the interaction `SMS:Lat` also shows a dip. However, it is not the case that this implies that slow mice exhibit decreased average signal association with the SMS reward. Consider some trial $j = 11$ where both Mouse 1 and 2 receive SMS. Again, let Mouse 1 run slower than average. We can write the photometry signals for these mice as
 
-$$
-Y_{1, 11}(3) = \beta_0 (3) + \beta_1 (3) + c \beta_2 (3) + c \beta_3 (3),  \\
-Y_{2, 11}(3) = \beta_0 (3) + \beta_1 (s).
-$$
-Again, at timepoint $s = 3$, Mouse 1 has not yet received the reward. Thus, if we interpret $\beta_1 (3)$ as the mean signal change associated with SMS at time $s = 3$, Mouse 1 would somehow have prior knowledge of the reward. Thus, the shape of the $\beta_3 (s)$ (corresponding to `SMS:Lat` in the plot) interaction functional coefficient can be explained as a correction for the strongly positive $\beta_2 (s)$ (`SMS`) main effect functional coefficient for slower-than-average mice. 
+\begin{align*}
+Y_{1, 11}(3) &= \beta_0 (3) + \beta_1 (3) + c \beta_2 (3) + c \beta_3 (3),  \\
+Y_{2, 11}(3) &= \beta_0 (3) + \beta_1 (s).
+\end{align*}
+
+Again, at 3 seconds, Mouse 1 has not yet received the reward. Thus, if we interpret $\beta_1 (3)$ as the mean signal change associated with SMS at time $s = 3$, this would imply that Mouse 1 has prior knowledge of the reward. Thus, the shape of the $\beta_3 (s)$interaction (corresponding to `SMS:Lat` in the plot) functional coefficient can be explained as a correction for the strongly positive $\beta_2 (s)$ (`SMS`) main effect functional coefficient for slower-than-average mice. 
 
 ### Concurrent model coefficients
 
-Like with the non-concurrent model, we can write out the model specifications and consider different cases. The concurrent model (without random effects or noise) is copied below:
+Like with the non-concurrent model, we can write out the model specifications and consider different cases. The expectation form of the concurrent model is below:
+
+**Note**: For the concurrent model, we have the covariate matrix $\mathbf{X}_{i, j} (s) = [\texttt{SMS}_{i, j}, \texttt{RZ}_{i,j} (s)]^T$
 
 $$
-Y_{i, j}(s) = 
+\mathbb{E} [Y_{i, j}(s) | \mathbf{X}_{i, j} (s) ] = 
 \beta_0 (s) + 
-\beta_1 (s) + \texttt{SMS}_{i, j} +
+\beta_1 (s) \texttt{SMS}_{i, j} +
 \beta_2 (s) \texttt{RZ}_{i, j} (s) + 
 \beta_3 (s) \texttt{SMS}_{i, j} \texttt{RZ}_{i, j} (s).
 $$
 
-At first, the concurrent model's coefficients might be surprising, as it seems that `SMS` has no contribution to the signal change within a trial. Let us consider Mouse 1 that tends to always run a slow time. Let Mouse 1 receive water in trial $j = 10$ and SMS in trial $j = 11$. Consider time $s = 3$, when Mouse 1 has not yet received a reward, i.e., $\texttt{RZ}_{1, 10} (3) = 0$. The signal is thus $Y_{1, 10} (3) = \beta_0 (3)$. In general, receiving SMS will only make a difference to the signal through the interaction term `SMS:RZ`. Thus, it is a good sanity check that $\beta_2 (s) \approx 0$ for all values of $s$, since $\beta_2 (s) \neq 0$ would imply that a mouse could know the reward before receiving it. 
+At first, the concurrent model's coefficients might be surprising, as it seems that `SMS` has no contribution to the signal change within a trial. However, keep in mind that `SMS` is the average effect associated with being in an SMS trial while the mouse has not yet receiving the reward. Thus, it is a good sanity check that $\beta_1 (s) \approx 0$ for all values of $s$, since $\beta_1 (s) \neq 0$ would imply that a mouse could know the reward before receiving it. 
 
-Now, let us consider Mouse 1 in Trial 10 and 11 at time point $s = 6$, when it receives a reward. We have
+The interaction term `SMS:RZ` is more relevant to interpreting the effect associated with the SMS reward, though this is not its precise definition. Consider Mouse 1 in Trial 10 and 11 at time point $s = 6$, immediately after it receives a reward. We have
 
-$$
-Y_{1, 10}(6) = \beta_0 (6) + \beta_2 (6),  \\
-Y_{1, 11}(6) = \beta_0 (6) + \beta_1 (6) + \beta_2 (6) + \beta_3 (6) \approx \beta_0 (6)  + \beta_2 (6) + \beta_3 (6).
-$$
+\begin{align*}
+\mathbb{E} [Y_{1, 10}(6) \mid \mathbf{X}_{1, 10}(6)] &= \beta_0 (6) + \beta_2 (6),  \\
+\mathbb{E} [Y_{1, 10}(6) \mid \mathbf{X}_{1, 10}(6)] &= \beta_0 (6) + \beta_1 (6) + \beta_2 (6) + \beta_3 (6) \approx \beta_0 (6)  + \beta_2 (6) + \beta_3 (6).
+\end{align*}
 
 From the above, we can see that $\beta_3 (s)$ controls the contribution of receiving a SMS reward that cannot already be explained by receiving a reward (i.e., only a water reward) or being in a trial with SMS. In this model, if we assume $\beta_1 (s) \approx 0$, as described above, we can say that it corresponds to how much more rewarding SMS is than water, on average. 
 
-Unlike the non-concurrent model, there are no strange interactions between a time-related summary statistic and the functional outcome. Incorporating $\texttt{RZ}_{i, j} (s)$ appropriately separates mice that have reached the reward zone and mice that are still in the corridor, allowing the experimenter to better visualize the association between the time-varying behavior and photometry signal.
+Unlike the non-concurrent model, the concurrent model does not contain potentially misleading interactions between a time-related summary statistic and the functional outcome. Incorporating $\texttt{RZ}_{i, j} (s)$ appropriately separates mice that have reached the reward zone and mice that are still in the corridor, allowing the experimenter to better visualize the association between the time-varying behavior and photometry signal.
 
 ### Comparing the non-concurrent and concurrent model
 
-The concurrent model coefficients are more easily interpretable because the model separates the experiment into the relevant, discrete events. Within the non-concurrent FLMM, the instantaneous interpretation of the coefficients is less pertinent to the question of identifying the association between average signal and behavior. In most cases with variable trial lengths, we anticipate that researchers will find the concurrent approach more applicable.
+The concurrent model coefficients are more easily interpretable because the model separates the experiment into the relevant, discrete events. Within the non-concurrent FLMM, the instantaneous interpretation of the coefficients is less pertinent to the question of identifying the association between the average signal and behavior. In most cases with variable trial lengths, we anticipate that researchers will find the concurrent approach more applicable.
 
-However, the concurrent model also has its own set of drawbacks. As mentioned previously, the concurrent model cannot fit time points when the functional covariate has zero variance. Because all mice are approaching the reward at the start of trial and all mice are rewarded by the end of the trial, the concurrent FLMM cannot fit the extreme ends of the trial time frame. Here, this limitation is not relevant because there are likely no significant differences in mice when they are all experiencing the same condition. In this experiment in particular, mice are unaware of the reward they will receive when the experiment begins, and trials are unlikely to be meaningfully different within this time period. 
+However, the concurrent model also has its own set of drawbacks. As mentioned previously, the concurrent model cannot fit time points when the functional covariate has zero variance. Because all mice are approaching the reward at the start of trial and all mice are rewarded by the end of the trial, the concurrent FLMM cannot fit the extreme ends of the trial time frame. Here, this limitation is not relevant because there are likely no meaningful (statistically significant) differences in signal values between SMS and water before reward delivery because mice are unaware of the reward they will receive. Furthermore, within this model, `RZ` or $\texttt{RZ}_{i, j} (s)$ treats all mice in the reward zone the same. Coefficient estimates later in the trial may be unreliable, as the model fits a coefficient estimate to mice that have recently received a reward and mice that have been waiting in the reward zone for some time. 
 
-Within this model, `RZ` or $\texttt{RZ}_{i, j} (s)$ treats all mice in the reward zone the same, regardless of how long ago the mouse initially received the reward. Coefficient estimates later in the trial may be unreliable and biased toward zero. Experimenters can address this concern by substituting the indicator variable for a decaying function. However, this approach requires *a priori* assumptions about the trend of photometry signals. Another approach would be to split analysis into faster and slower mice. However, this strategy does not entirely eliminate the concern as regression to the mean still exists, just within smaller batches. Furthermore, it decreases the power of the model and raises concerns about multiple comparison.
+<!-- In this experiment in particular, mice are unaware of the reward they will receive when the experiment begins, and trials are unlikely to be meaningfully different within this time period.  -->
+
+<!-- Within this model, `RZ` or $\texttt{RZ}_{i, j} (s)$ treats all mice in the reward zone the same, regardless of how long ago the mouse initially received the reward. Coefficient estimates later in the trial may be unreliable and biased toward zero. Experimenters can address this concern by substituting the indicator variable for a decaying function. However, this approach requires *a priori* assumptions about the trend of photometry signals. Another approach would be to split analysis into faster and slower mice. However, this strategy does not entirely eliminate the concern as regression to the mean still exists, just within smaller batches. Furthermore, it decreases the power of the model and raises concerns about multiple comparison. -->
 
 ## References
+
+Gabriel Loewinger, Erjia Cui, David Lovinger, Francisco Pereira. [A Statistical Framework for Analysis of Trial-Level Temporal Dynamics in Fiber Photometry Experiments](https://doi.org/10.7554/eLife.95802.2). eLife Neuroscience (2024).
 
 Briana Machen, Sierra N. Miller, Al Xin, Carine Lampert, Lauren Assaf, Julia Tucker, Francisco Pereira, Gabriel Loewinger, Sofia Beas. [The encoding of interoceptive-based predictions by the paraventricular nucleus of the thalamus D2+ neurons](https://doi.org/10.1101/2025.03.10.642469). bioRxiv (2025).
 

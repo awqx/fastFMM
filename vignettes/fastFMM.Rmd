@@ -201,7 +201,7 @@ lick_conc <- fui(
 
 ## Plotting models
 
-After fitting a model, one can quickly visualize estimates and 95% confidence intervals with the function `fastFMM::plot_fui()`, which works for both non-concurrent and concurrent models. For now, the label for the functional covariate's fixed coefficients inherit the first instance of the covariate. However, the plotted coefficients reflect `lick_1` to `lick_43`. 
+After fitting a model, one can quickly visualize estimates and 95% confidence intervals with the function `fastFMM::plot_fui()`, which works for both non-concurrent and concurrent models. For now, the label for the functional covariates' fixed coefficients correspond to the first covariate name, e.g., `lick_1`. However, the plotted coefficients reflect `lick_1` to `lick_43`. 
 
 ```{r plot models, fig.width = 6, fig.height = 4}
 # Sending outputs to a dummy variable makes the output cleaner
