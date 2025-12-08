@@ -5,8 +5,7 @@
 \alias{d2pvt}
 \title{Machen et al. (2025) variable trial length data}
 \format{
-## `d2pvt`
-
+A data frame with 1335 rows and 248 columns:
 \describe{
  \item{id}{Unique mouse ID}
  \item{session}{Session}
@@ -19,20 +18,18 @@
 }
 }
 \source{
-<https://doi.org/10.1101/2025.03.10.642469>
+\url{https://doi.org/10.1101/2025.03.10.642469}. Briana Machen,
+  Sierra N. Miller, Al Xin, Carine Lampert, Lauren Assaf, Julia Tucker, Sarah
+  Herrell, Francisco Pereira, Gabriel Loewinger, Sofia Beas. The encoding of
+  interoceptive-based predictions by the paraventricular nucleus of the
+  thalamus D2+ neurons. DOI: 10.1101/2025.03.10.642469. bioRxiv (2025).
 }
 \usage{
 d2pvt
 }
 \description{
-Data from Briana Machen, Sierra N. Miller, Al Xin, Carine Lampert, Lauren
-Assaf, Julia Tucker, Sarah Herrell, Francisco Pereira, Gabriel Loewinger,
-Sofia Beas. [The encoding of interoceptive-based predictions by the
-paraventricular nucleus of the thalamus D2+
-neurons](https://doi.org/10.1101/2025.03.10.642469). bioRxiv (2025).
-}
-\details{
-Mice ran through a maze where they received either a strawberry milkshake (SMS)
-or water (H2O) reward. Mice entered the reward zone at variable times.
+Data from an experiment where mice ran through a maze where they received
+either a strawberry milkshake (SMS) or water (H2O) reward. Mice entered the
+reward zone at variable times.
 }
 \keyword{datasets}
