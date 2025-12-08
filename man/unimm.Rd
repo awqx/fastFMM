@@ -18,3 +18,4 @@ Results depends on the dispatched method.
 Dispatches class-specific methods for fitting a single point during the
 univariate mixed model step.
 }
+\keyword{internal}

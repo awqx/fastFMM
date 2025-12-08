@@ -1,8 +1,8 @@
 Package: fastFMM
 Type: Package
 Title: Fast Functional Mixed Models using Fast Univariate Inference
-Version: 0.4.0
-Date: 2025-07-23
+Version: 1.0.0
+Date: 2025-12-04
 Authors@R: c(
     person("Erjia", "Cui", role = c("aut", "cre"), email = "ecui@umn.edu"),
     person("Gabriel", "Loewinger", role = "aut", email = "gloewinger@gmail.com"),
@@ -13,11 +13,11 @@ Encoding: UTF-8
 LazyData: true
 Repository: CRAN
 Imports:
+    dplyr,
     lme4,
     parallel,
     cAIC4,
     magrittr,
-    dplyr,
     mgcv,
     MASS,
     lsei,
@@ -32,7 +32,7 @@ Imports:
     lmeresampler,
     stats,
     methods
-RoxygenNote: 7.3.2
+RoxygenNote: 7.3.3
 URL: https://github.com/gloewing/fastFMM
 BugReports: https://github.com/gloewing/fastFMM/issues
 VignetteBuilder: knitr
@@ -42,4 +42,4 @@ Suggests:
     spelling
 Language: en-US
 Depends: 
-    R (>= 2.10)
+    R (>= 3.5)

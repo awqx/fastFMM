@@ -9,7 +9,7 @@
 #'
 #' @param formula Formula in `lme4` formula syntax.
 #' @param data Data frame to fit.
-#' @param subj_id Character, name of variable containing IDs. Paased from `fui`
+#' @param subj_id Character, name of variable containing IDs. Passed from `fui`
 #' @param argvals List of points to fit on the functional domain. Only applies
 #' for the bootstrap case (i.e., `analytic = FALSE`).
 #' @param family Character, GLM family of the response. Passed from `fui`.
@@ -118,6 +118,7 @@ new_fastFMM <- function(
 #'
 #' @param formula Formula in `lme4` formula syntax.
 #' @param data Data frame to fit.
+#' @param subj_id Character, name of variable containing IDs. Passed from `fui`
 #' @param argvals List of points to fit on the functional domain. Only applies
 #' for the bootstrap case (i.e., `analytic = FALSE`).
 #' @param family Character, GLM family of the response. Passed from `fui`.
@@ -169,42 +170,4 @@ new_fastFMMconc <- function(
   fmm$fun_covariates <- fun_covariates
   class(fmm) <- c("fastFMMconc", "fastFMM")
   return(fmm)
-}
-
-#' Printing the fastFMM object
-#'
-#' Simple method to look at the relevant fields.
-#'
-#' @param fmm Object to print
-#'
-#' @return Basic list of entries
-#' @method print fastFMM
-#' @export
-
-print.fastFMM <- function(fmm) {
-  paste0(
-    "Formula: ", fmm$formula, "\n",
-    "Data dimensions: ", dim(fmm$data), "\n",
-    "Total size of functional domain: ", length(fmm$out_index), "\n",
-    "Size of functional domain in fit: ", length(fmm$argvals), "\n"
-  )
-}
-
-#' Printing the fastFMMconc object
-#'
-#' Simple method to look at the relevant fields.
-#'
-#' @param fmm Object to print
-#'
-#' @return Basic list of entries
-#' @method print fastFMM
-#' @export
-
-print.fastFMMconc <- function(fmm) {
-  paste0(
-    "Formula: ", fmm$formula, "\n",
-    "Data dimensions: ", dim(fmm$data), "\n",
-    "Total size of functional domain: ", length(fmm$out_index), "\n",
-    "Size of functional domain in fit: ", length(fmm$argvals), "\n"
-  )
 }

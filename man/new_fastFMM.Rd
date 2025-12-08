@@ -22,7 +22,7 @@ new_fastFMM(
 
 \item{data}{Data frame to fit.}
 
-\item{subj_id}{Character, name of variable containing IDs. Paased from `fui`}
+\item{subj_id}{Character, name of variable containing IDs. Passed from `fui`}
 
 \item{argvals}{List of points to fit on the functional domain. Only applies
 for the bootstrap case (i.e., `analytic = FALSE`).}

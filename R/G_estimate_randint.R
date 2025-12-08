@@ -14,6 +14,7 @@
 #' @importFrom Matrix crossprod
 #' @importFrom stats cov var
 #' @export
+#' @keywords internal
 
 # Derive covariance estimates of random components: G(s1,s2)
 ### Create a function that estimates covariance G for random intercepts

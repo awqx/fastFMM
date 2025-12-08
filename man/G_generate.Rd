@@ -18,3 +18,4 @@ A design matrix for G estimation.
 Creates the design matrix that allows for the estimation of the G matrix.
 Output related to "G_estimate" dispatch.
 }
+\keyword{internal}

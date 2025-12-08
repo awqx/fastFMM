@@ -62,3 +62,4 @@ List of final outputs of `fui`
 \description{
 Helper for `fui`. Bootstrapped variance calculation.
 }
+\keyword{internal}

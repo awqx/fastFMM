@@ -9,9 +9,7 @@ vignette: >
 
 ```{r, include = FALSE}
 knitr::opts_chunk$set(
-  collapse = TRUE,
-  comment = "#>", 
-  eval = TRUE
+  collapse = TRUE, comment = "#>", cache = T
 )
 ```
 
@@ -26,7 +24,11 @@ suppressMessages(library(dplyr))
 
 ## Experimental design
 
-For this vignette, we sourced data from "The encoding of interoceptive-based predictions by the paraventricular nucleus of the thalamus D2+ neurons" ([Machen et al. (2025)](https://doi.org/10.1101/2025.03.10.642469)). Machen et al. recorded photometry signals from mice in a foraging-like task. Experimenters placed mice in a corridor and provided a reward if the mice arrived in a reward zone at the end of the corridor. The researchers experimented with different types of rewards and whether mice were hungry or satiated. For simplicity, we will focus on comparing the signal associated with receiving a strawberry milkshake reward (SMS) versus a water reward.
+For this vignette, we sourced data from "The encoding of interoceptive-based predictions by the paraventricular nucleus of the thalamus D2+ neurons" ([Machen et al. (2025)](https://doi.org/10.1101/2025.03.10.642469)). Machen et al. recorded photometry signals from mice in a foraging-like task. Experimenters placed mice in a corridor and provided a reward if the mice arrived in a reward zone at the end of the corridor. The researchers experimented with different types of rewards and whether mice were hungry or satiated. For simplicity, we will focus on comparing the signal associated with receiving a strawberry milkshake reward (SMS) versus a water reward. Observations from these trials are available within `fastFMM` as the dataset `fastFMM::d2pvt`. 
+
+```{r read data}
+d2pvt <- fastFMM::d2pvt
+```
 
 ### Variable trial lengths
 
@@ -34,54 +36,42 @@ For this experiment, we want trials to include both the approaching phase and re
 
 ### Data processing
 
-We converted the scalar covariate of `Lat` (i.e., the time, in seconds, for a mouse to receive the reward in a given trial) to the functional covariate `RZ` (reward zone). We set `RZ = 0` at trial timepoints earlier than `Lat` and `RZ = 1` for timepoints later than `Lat`. We also translate and scale trial to the interval `[0, 1]` where 0 is Trial 0 and 1 is the maximum trial number across all mice. 
-
-**Note**: We currently do not publish the complete raw data, so the provided vignette code is for demonstration purposes only and *will not run by default*. The remainder of this vignette will refer to the relevant data frame as `d2pvt`. 
+We converted the scalar covariate of `latency` (i.e., the time, in seconds, for a mouse to receive the reward in a given trial) to the functional covariate `rewarded` (also referred to as RZ, or reward zone in later models). We set `rewarded = 0` at trial timepoints earlier than `latency` and `= 1` for timepoints later than `latency`. We also translate and scale trial to the interval `[0, 1]` where 0 is Trial 0 and 1 is the maximum trial number across all mice. 
 
 ```{r read d2pvt, echo = FALSE}
-d2pvt <- read.csv("../data/hidden/hsms_hh2o.csv") %>%
-  mutate(outcome = as.factor(outcome)) %>%
-  mutate(outcome = relevel(outcome, ref = "H-H2O")) %>%
+d2pvt <- d2pvt %>%
   mutate(
-    session = session - 1, 
-    trial = trial - 1, 
+    session = session - 1, trial = trial - 1, 
     latency = latency - mean(latency)
   ) %>%
   mutate(
     trial = trial / max(trial), 
     session = session / max(session)
-  ) %>%
-  rename(
-    Lat = latency
-  ) %>%
-  mutate(
-    SMS = as.numeric(outcome) - 1
   )
+```
 
+For the concurrent model, it is also necessary to remove functional covariates with zero variance. In practice, the cutoff for the column variance may need to be higher than zero based on the other predictors and the total number of observations. Here, a cutoff of 0.01 is needed. An example of how `rewarded` is encoded is displayed below.
+
+```{r no all zeroes}
 # Remove columns of all zeros
 zero_var <- sapply(
-  select(d2pvt, approaching_1:approaching_121), 
+  select(d2pvt, rewarded_1:rewarded_121), 
   function(x) 
     var(x) <= 0.01
 ) 
 
 zero_var_cols <- c(
   paste0("photometry_", which(zero_var)), 
-  paste0("approaching_", which(zero_var))
+  paste0("rewarded_", which(zero_var))
 )
   
 d2pvt_nonzero <- d2pvt[, !colnames(d2pvt) %in% zero_var_cols]
-
-approaching_df <- d2pvt_nonzero[, grep("^approaching", colnames(d2pvt_nonzero))]
-reward_df <- abs(approaching_df - 1)
-colnames(reward_df) <- gsub("^approaching", "RZ", colnames(approaching_df))
-d2pvt_nonzero <- cbind(d2pvt_nonzero, reward_df)
 ```
 
 ```{r kable data, echo = FALSE}
 knitr::kable(
   d2pvt_nonzero %>%
-    select(id, trial, session, Lat, RZ_45:RZ_50) %>%
+    select(id, trial, session, latency, rewarded_45:rewarded_50) %>%
     head()
 )
 ```
@@ -104,7 +94,7 @@ where we define the covariates
 - $\texttt{RZ}_{i, j} (s)$: whether the mouse has received the reward , with 1 meaning rewarded and 0 meaning not yet rewarded by timepoint $s$, and
 - $\texttt{SMS}_{i, j}$: the trial outcome, where 1 indicates SMS reward and 0 indicates water reward.
 
-**Note**: Within the data frame, the covariate $\texttt{RZ} (s_l)$ corresponds to the column `RZ_l`, where $i$ is some integer indexing the functional domain.
+**Note**: Within the data frame, the covariate $\texttt{RZ} (s_l)$ corresponds to the column `rewarded_l`, where $l$ is some integer indexing the functional domain.
 
 In this model, the fixed effects coefficients are interpreted as:
 
@@ -122,17 +112,17 @@ We fit the concurrent model as follows:
 
 ```{r fit concurrent}
 concurrent <- fastFMM::fui(
-  photometry ~ SMS * RZ + (SMS | id), 
+  photometry ~ SMS * rewarded + (SMS | id), 
   d2pvt_nonzero, 
-  parallel = TRUE,
+  # parallel = TRUE,
   concurrent = TRUE, 
   silent = TRUE
 )
 ```
 
-**Note**: The concurrent model cannot fit timepoints when the functional covariates do not vary across animals or trials (i.e., have zero variance), so we fit to the data `d2pvt_nonzero`, a subset of `d2pvt`. In this case, the functional covariate `RZ` is the same across all mice at the beginning and end of the trial.
+**Note**: The concurrent model cannot fit timepoints when the functional covariates do not vary across animals or trials (i.e., have zero variance), so we fit to the data `d2pvt_nonzero`, a subset of `d2pvt`. In this case, the functional covariate `rewarded` is the same across all mice at the beginning and end of the trial.
 
-**Note**: The term `SMS * RZ` implicitly includes the non-interaction terms `SMS + RZ`. 
+**Note**: The term `SMS * rewarded` implicitly includes the non-interaction terms `SMS + rewarded`. 
 
 ## Interpretation and discussion
 
@@ -236,7 +226,7 @@ We can fit the non-concurrent model as follows:
 
 ```{r fit nonco}
 nonconcurrent <- fastFMM::fui(
-  photometry ~ SMS * Lat + (SMS | id), 
+  photometry ~ SMS * latency + (SMS | id), 
   d2pvt, 
   concurrent = FALSE, 
   silent = TRUE
@@ -245,7 +235,7 @@ nonconcurrent <- fastFMM::fui(
 
 **Note**: Fitting a non-concurrent model with `fastFMM::fui(..., concurrent = FALSE)` is the same FLMM fitting procedure implemented in the previous `fastFMM` package versions; see [Loewinger et al. (2024)](https://doi.org/10.7554/eLife.95802.2).
 
-**Note**: The interaction `SMS * Lat` implicitly includes the non-interaction terms `SMS + Lat`. 
+**Note**: The interaction `SMS * latency` implicitly includes the non-interaction terms `SMS + latency`. 
 
 ### Non-concurrent coefficients
 
@@ -272,7 +262,7 @@ $$
 \beta_3 (s) \texttt{SMS}_{i, j} \texttt{Lat}_{i, j},
 $$
 
-To explain the shape of $\beta_2 (s)$ (i.e., the fixed coefficient corresponding to `Lat`), let's contrast the expected signal for average latency ($\texttt{Lat}_{i, j} = 0$) versus slower-than-average latency ($\texttt{Lat}_{i, j} = c > 0$ where $c$ is some arbitrary positive real value) on a water trial:
+To explain the shape of $\beta_2 (s)$ (i.e., the fixed coefficient corresponding to `latency`), let's contrast the expected signal for average latency ($\texttt{Lat}_{i, j} = 0$) versus slower-than-average latency ($\texttt{Lat}_{i, j} = c > 0$ where $c$ is some arbitrary positive real value) on a water trial:
 
 $$
 \mathbb{E} [Y_{i, j}(s) \mid \texttt{SMS}_{i, j} = 0, \texttt{Lat}_{i, j} = c > 0] = \beta_0 (s) + c \beta_2 (s) \\
@@ -281,14 +271,14 @@ $$
 
 The curve of $\beta_0 (s)$ reflects the expected signal for a mouse running an average latency. For some timepoints after the average latency, the first equation (slow mouse) reflects the expected photometry signal of a mouse that has not yet reached the reward while the second equation reflects a mouse that has just received the reward. Both equations contain $\beta_0 (s)$ (the intercept), but we presume that the slow mouse will have a lower expected signal. Thus, the negative contribution of $c \beta_2 (3)$ could be interpreted as offsetting the intercept for slow mice and may not be meaningfully related to receiving the reward.
 
-The shape of the coefficient curve for the interaction `SMS:Lat` also shows a dip. However, it is not the case that this implies that slow mice exhibit decreased average signal association with the SMS reward. Again, let's write out the expressions for different latencies in a SMS trial:
+The shape of the coefficient curve for the interaction `SMS:latency` also shows a dip. However, it is not the case that this implies that slow mice exhibit decreased average signal association with the SMS reward. Again, let's write out the expressions for different latencies in a SMS trial:
 
 $$
 \mathbb{E} [Y_{i, j}(s) \mid \texttt{SMS}_{i, j} = 1, \texttt{Lat}_{i, j} = c > 0] = \beta_0 (s) + \beta_1 (s) + c \beta_2 (s) + c \beta_3 (s) \\
 \mathbb{E} [Y_{i, j}(s) \mid \texttt{SMS}_{i, j} = 1, \texttt{Lat}_{i, j} = 0] = \beta_0 (s) + \beta_1 (s).
 $$
 
-We encounter a similar problem, where for some $s$ after the reward is received, the expression when conditioning on slow latencies contains the expression capturing the signal on average latencies. Thus, the shape of $\beta_3 (s)$ (corresponding to `SMS:Lat` in the plot) may be explained as a compensation for the strongly positive $\beta_2 (s)$ (`SMS`) main effect functional coefficient for slower-than-average mice. 
+We encounter a similar problem, where for some $s$ after the reward is received, the expression when conditioning on slow latencies contains the expression capturing the signal on average latencies. Thus, the shape of $\beta_3 (s)$ (corresponding to `SMS:latency` in the plot) may be explained as a compensation for the strongly positive $\beta_2 (s)$ (`SMS`) main effect functional coefficient for slower-than-average mice. 
 
 ### Comparing the non-concurrent and concurrent model
 

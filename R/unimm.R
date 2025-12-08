@@ -8,6 +8,7 @@
 #'
 #' @return Results depends on the dispatched method.
 #' @export
+#' @keywords internal
 
 unimm <- function(fmm, ...) {
   UseMethod("unimm")
@@ -26,8 +27,10 @@ unimm <- function(fmm, ...) {
 #'
 #' @return a list containing point estimates, variance estimates, etc.
 #' @export
+#' @noRd
+#' @keywords internal
 
-unimm.fastFMM <- function(fmm, l) {
+unimm.fastFMM <- function(fmm, l, ...) {
   # Extract the data at the given point l
   form <- as.character(fmm$formula)
   out_index <- fmm$out_index
@@ -61,8 +64,10 @@ unimm.fastFMM <- function(fmm, l) {
 #' @importFrom stats as.formula model.matrix
 #' @importFrom Matrix colSums
 #' @export
+#' @noRd
+#' @keywords internal
 
-unimm.fastFMMconc <- function(fmm, l) {
+unimm.fastFMMconc <- function(fmm, l, ...) {
   # Extract the correct index of the functional domain
   form <- as.character(fmm$formula)
   data <- fmm$data
@@ -123,7 +128,8 @@ unimm.fastFMMconc <- function(fmm, l) {
 #' @import lme4
 #'
 #' @return an `lme4` model chosen between `lmer` or `glmer`, as appropriate.
-#' @export
+#' @noRd
+#' @keywords internal
 
 unimm_lmer <- function(formula, data, family) {
   if (family == "gaussian") {
@@ -168,7 +174,8 @@ unimm_lmer <- function(formula, data, family) {
 #' @import lme4
 #' @importFrom cAIC4 cAIC
 #' @importFrom stats residuals AIC BIC
-#' @export
+#' @noRd
+#' @keywords internal
 
 unimm_outs <- function(fit_uni, fmm) {
   # Fixed effects estimates

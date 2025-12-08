@@ -2,8 +2,10 @@
 ^renv\.lock$
 ^.*\.Rproj$
 ^\.Rproj\.user$
+demo\.Rmd
 rebuild\.R
 rebuild\.Rmd
+rebuild_0\.Rmd
 rebuild_exports\.Rmd
 fui_conc\.Rmd
 ^\.gitignore$
@@ -14,3 +16,5 @@ fui_conc\.Rmd
 ^data-raw/
 ^data/hidden/
 ^data-raw$
+vignettes/d2pvt_cache/
+vignettes/fastFMM_cache/

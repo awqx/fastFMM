@@ -19,3 +19,4 @@ Estimates covariance of random components. The related function for the
 random intercept flag (`G_estimate_randint`) does not require a generic
 because the operations are the same for concurrent and non-concurrent models.
 }
+\keyword{internal}

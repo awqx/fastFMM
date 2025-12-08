@@ -8,7 +8,7 @@
 #'
 #' @return A design matrix for G estimation.
 #' @export
-
+#' @keywords internal
 G_generate <- function(fmm, ...) {
   UseMethod("G_generate")
 }
@@ -26,8 +26,9 @@ G_generate <- function(fmm, ...) {
 #' @method G_generate fastFMM
 #' @return A list with the new Z, the original Ztlist, and indices
 #' @export
-
-G_generate.fastFMM <- function(fmm, mum, MoM) {
+#' @noRd
+#' @keywords internal
+G_generate.fastFMM <- function(fmm, mum, MoM, ...) {
 
   # Z_lst is the ZTlist (transposed) output from:
   #   sapply(getME(fit_uni, "Ztlist"), function(x) t(x) )
@@ -163,9 +164,10 @@ G_generate.fastFMM <- function(fmm, mum, MoM) {
 
 #' @importFrom Matrix rowSums
 #' @export
-
+#' @noRd
+#' @keywords internal
 # AX: Add back all_crossterms
-G_generate.fastFMMconc <- function(fmm, mum, i, j, MoM = 1) {
+G_generate.fastFMMconc <- function(fmm, mum, i, j, MoM = 1, ...) {
 
   # Z_lst is the ZTlist (transposed) output from:
   #   sapply(getME(fit_uni, "Ztlist"), function(x) t(x) )
@@ -247,7 +249,8 @@ G_generate.fastFMMconc <- function(fmm, mum, i, j, MoM = 1) {
 #' @return Matrix of cross-terms between `Z_i` and `Z_j`.
 #'
 #' @import Matrix
-
+#' @noRd
+#' @keywords internal
 all_crossterms <- function(Z_i, Z_j, make_sparse = TRUE) {
 
   if (!identical(dim(Z_i), dim(Z_j)))

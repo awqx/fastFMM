@@ -4,7 +4,7 @@
 \alias{var_parallel.fastFMM}
 \title{Parallel variance calculation for non-concurrent models}
 \usage{
-\method{var_parallel}{fastFMM}(fmm, mum, s, Z, RHat, HHat, id_list, obs_ind, res_template)
+\method{var_parallel}{fastFMM}(fmm, mum, s, Z, RHat, HHat, id_list, obs_ind, res_template, ...)
 }
 \arguments{
 \item{fmm}{A "fastFMM" object}
@@ -32,3 +32,4 @@ beta-tilde, and trimmed H-hat.
 \description{
 Calculate the variance of coefficients with index s.
 }
+\keyword{internal}

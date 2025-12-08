@@ -18,3 +18,4 @@ Calculated variance at location s
 A helper function for `var_analytic` that calculations the variance elements
 of the covariance matrix.
 }
+\keyword{internal}

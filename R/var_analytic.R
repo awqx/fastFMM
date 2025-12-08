@@ -21,7 +21,7 @@
 #' @importFrom parallel mclapply
 #' @importFrom methods new
 #' @importFrom mvtnorm rmvnorm
-#' @export
+#' @keywords internal
 
 var_analytic <- function(
   fmm,
@@ -390,7 +390,6 @@ var_analytic <- function(
 #' @return Vector of specified knots
 #'
 #' @importFrom stats quantile
-#' @export
 
 select_knots <- function(
     t, knots = 10, p = 3, option = "equally-spaced"
@@ -421,7 +420,6 @@ select_knots <- function(
 #' @return Block diagonal version of input
 #'
 #' @importFrom methods new
-#' @export
 
 bdiag_m <- function(lmat) {
   ## Copyright (C) 2016 Martin Maechler, ETH Zurich
@@ -460,7 +458,6 @@ bdiag_m <- function(lmat) {
 #' @param cov_vec Character vector
 #'
 #' @return List of relevant outputs
-#' @export
 
 cov_organize_start <- function(cov_vec) {
   # Assume each set of cov for 2 preceeding variance terms of random effects
@@ -581,7 +578,8 @@ cov_organize_start <- function(cov_vec) {
 #' @param V Matrix of dimension n x n
 #'
 #' @return A Matrix with negative eigenvalues removed
-#' @export
+#' @noRd
+#' @keywords internal
 
 eigenval_trim <- function(V) {
   ## trim non-positive eigenvalues to ensure positive semidefinite
@@ -628,7 +626,8 @@ eigenval_trim <- function(V) {
 #'
 #' @importFrom splines spline.des
 #' @import Matrix
-#' @export
+#' @noRd
+#' @keywords internal
 
 pspline_setting <- function(
     x,
@@ -751,7 +750,8 @@ pspline_setting <- function(
 #' @param control See `optim`.
 #'
 #' @return A smoothed matrix
-#' @export
+#' @noRd
+#' @keywords internal
 
 fbps_cov <- function(
     data,

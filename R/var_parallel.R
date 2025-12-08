@@ -8,6 +8,7 @@
 #'
 #' @return Calculated variance at location s
 #' @export
+#' @keywords internal
 
 var_parallel <- function(fmm, ...) {
   UseMethod("var_parallel")
@@ -32,7 +33,7 @@ var_parallel <- function(fmm, ...) {
 #'
 #' @method var_parallel fastFMM
 #' @export
-
+#' @keywords internal
 # AX: separate issue: bug catching in parallel
 # AX: report failed indices of calculation (e.g., due to non-invertible matrices)
 # AX: E.g., message, consider removal of terminal points on functional domain
@@ -46,7 +47,8 @@ var_parallel.fastFMM <- function(
   HHat,
   id_list,
   obs_ind,
-  res_template
+  res_template,
+  ...
 ) {
   # Setup parameters
   V_subj_inv <- c()
@@ -138,7 +140,8 @@ var_parallel.fastFMM <- function(
 #'
 #' @method var_parallel fastFMMconc
 #' @export
-
+#' @noRd
+#' @keywords internal
 var_parallel.fastFMMconc <- function(
   fmm,
   mum,
@@ -148,7 +151,8 @@ var_parallel.fastFMMconc <- function(
   HHat,
   id_list,
   obs_ind,
-  res_template
+  res_template,
+  ...
 ) {
   # Setup parameters
   V_subj_inv <- c()

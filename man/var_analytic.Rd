@@ -44,3 +44,4 @@ List of final outputs of `fui`
 \description{
 Helper for `fui`. Analytic calculation for Gaussian models.
 }
+\keyword{internal}

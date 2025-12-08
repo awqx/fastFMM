@@ -9,6 +9,7 @@
 #'
 #' @return An estimation of the G matrix
 #' @export
+#' @keywords internal
 
 G_estimate <- function(fmm, ...) {
   UseMethod("G_estimate")
@@ -37,9 +38,11 @@ G_estimate <- function(fmm, ...) {
 #' @importFrom Matrix crossprod tcrossprod
 #' @importFrom MASS ginv
 #' @export
+#' @noRd
+#' @keywords internal
 
 G_estimate.fastFMM <- function(
-  fmm, mum, betaHat, HHat, non_neg, MoM, silent
+  fmm, mum, betaHat, HHat, non_neg, MoM, silent, ...
 ) {
   if(silent == FALSE)
     message("Step 3.1.1: Method of Moments Covariance Estimator")
@@ -176,9 +179,11 @@ G_estimate.fastFMM <- function(
 #' @importFrom Matrix crossprod tcrossprod
 #' @importFrom MASS ginv
 #' @export
+#' @noRd
+#' @keywords internal
 
 G_estimate.fastFMMconc <- function(
-  fmm, mum, betaHat, HHat, non_neg, MoM, silent
+  fmm, mum, betaHat, HHat, non_neg, MoM, silent, ...
 ) {
   if(silent == FALSE)
     message("Step 3.1.1: Method of Moments Covariance Estimator")
@@ -254,7 +259,6 @@ G_estimate.fastFMMconc <- function(
   return(list(GTilde = GTilde, data_cov = data_cov))
 }
 
-
 #' Estimate non-negative diagonal terms on G matrix
 #'
 #' Helper function for `G_estimate`. Uses least squares under non-negativity
@@ -272,6 +276,7 @@ G_estimate.fastFMMconc <- function(
 #' @return A new GTilde matrix with enforced non-negativity
 #'
 #' @importFrom lsei pnnls
+#' @keywords internal
 
 cov_nnls <- function(
   mum,

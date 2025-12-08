@@ -12,7 +12,10 @@ demo.Rmd
 fui_conc.Rmd
 *oop.R
 data/hidden/
+data-raw/hidden/
 *tar.gz
 *rebuild.R
 *_conc.*
 inst/doc
+vignettes/d2pvt_cache/
+vignettes/fastFMM_cache/

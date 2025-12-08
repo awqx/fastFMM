@@ -7,6 +7,7 @@
 #'
 #' @return Results depends on the dispatched method.
 #' @export
+#' @keywords internal
 
 massmm <- function(fmm, ...) {
   UseMethod("massmm")
@@ -27,8 +28,10 @@ massmm <- function(fmm, ...) {
 #' @importFrom stats model.matrix
 #' @importFrom Matrix t
 #' @export
+#' @noRd
+#' @keywords internal
 
-massmm.fastFMM <- function(fmm, parallel, n_cores) {
+massmm.fastFMM <- function(fmm, parallel, n_cores, ...) {
   # Generate the univariate fits
   mass_list <- massmm_apply(fmm, parallel, n_cores)
   res <- massmm_outs(mass_list, fmm)
@@ -114,8 +117,10 @@ massmm.fastFMM <- function(fmm, parallel, n_cores) {
 #' @importFrom lme4 VarCorr getME
 #' @importFrom stats model.matrix
 #' @export
+#' @noRd
+#' @keywords internal
 
-massmm.fastFMMconc <- function(fmm, parallel, n_cores) {
+massmm.fastFMMconc <- function(fmm, parallel, n_cores, ...) {
   # Generate the univariate fits
   mass_list <- massmm_apply(fmm, parallel, n_cores)
   res <- massmm_outs(mass_list, fmm)
@@ -202,8 +207,8 @@ massmm.fastFMMconc <- function(fmm, parallel, n_cores) {
 #' @importFrom parallel mclapply makePSOCKcluster parLapply
 #'
 #' @return A list of fitted univariate models.
-#' @export
-
+#' @noRd
+#' @keywords internal
 massmm_apply <- function(fmm, parallel, n_cores = 1) {
   if (!parallel) {
     res <- lapply(
@@ -258,8 +263,8 @@ massmm_apply <- function(fmm, parallel, n_cores = 1) {
 #' @param fmm Object of class "fastFMM" with parameters for model fitting.
 #'
 #' @return A list of betaTilde, the AIC matrix, and residuals (if applicable).
-#' @export
-
+#' @noRd
+#' @keywords internal
 massmm_outs <- function(mass_list, fmm) {
   # Obtain betaTilde, fixed effects estimates
   argvals <- fmm$argvals

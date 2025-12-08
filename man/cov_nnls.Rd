@@ -30,3 +30,4 @@ A new GTilde matrix with enforced non-negativity
 Helper function for `G_estimate`. Uses least squares under non-negativity
 constraints, mainly relying on `nnls` capability from `lsei`.
 }
+\keyword{internal}

@@ -23,3 +23,4 @@ An estimation of the G matrix
 Estimates the covariance matrix G at Step 3. If the only random effect is an
 intercept, we can use a speedup.
 }
+\keyword{internal}

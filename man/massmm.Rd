@@ -17,3 +17,4 @@ Results depends on the dispatched method.
 \description{
 Fits the model over the functional domain based on the object class.
 }
+\keyword{internal}

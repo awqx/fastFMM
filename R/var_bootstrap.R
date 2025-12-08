@@ -27,7 +27,8 @@
 #' @importFrom parallel mclapply
 #' @importFrom methods new
 #' @importFrom mvtnorm rmvnorm
-
+#' @importFrom stringr str_remove
+#' @keywords internal
 var_bootstrap <- function(
   fmm,
   mum,

@@ -1,7 +1,7 @@
 ---
 title: "Introduction to fastFMM model fitting"
 output: rmarkdown::html_vignette
-author: Gabriel Loewinger, Erjia Cui, Alison W Xin
+author: Gabriel Loewinger, Erjia Cui, Al W Xin
 date: "`r Sys.Date()`"
 vignette: >
   %\VignetteIndexEntry{fastFMM}
@@ -10,10 +10,7 @@ vignette: >
 ---
 
 ```{r preamble, include = FALSE}
-knitr::opts_chunk$set(
-  collapse = TRUE,
-  comment = "#>"
-)
+knitr::opts_chunk$set(collapse = TRUE, comment = "#>", cache = T)
 ```
 
 ```{r setup}
@@ -27,7 +24,7 @@ suppressMessages(library(dplyr))
 
 ### Installation
 
-While `fastFMM` is available on CRAN, the development version of the package can be downloaded from [GitHub](https://github.com/gloewing/fastFMM):
+While `fastFMM` is available on CRAN, the development version of the package can be downloaded from [GitHub](https://github.com/awqx/fastFMM):
 
 ```{r install github, eval = FALSE}
 if (!require("devtools")) install.packages("devtools")
@@ -50,6 +47,7 @@ referred to as a functional mixed model (FMM) in the functional data analysis (F
 FUI consists of the following three steps:
 
 1. *Fit univariate models*. Fit separate linear mixed models at every point along the functional domain $\mathcal{S}$. That is, at each location $s_l \in \mathcal{S}, l = 1, 2, ..., L$,  we fit a pointwise generalized linear mixed model (GLMM) of the form
+
 $$
 \begin{aligned} 
   & Y_{i, j}(s_l) \sim EF\{\mu_{i,j}(s_l)\}, \\
@@ -193,8 +191,8 @@ lick_conc <- fui(
   photometry ~ lick + trial + session + (lick | id), 
   data = lick_, 
   concurrent = TRUE, 
-  parallel = TRUE, 
-  n_cores = 4, 
+  # parallel = TRUE, 
+  # n_cores = 4, 
   silent = TRUE
 )
 ```
@@ -262,12 +260,15 @@ names(lick_conc_outs)
 
 ## Troubleshooting
 
-- You are welcome to contact us about `fastFMM` at [gloewinger\@gmail.com](mailto:gloewinger@gmail.com){.email} with any questions or error reports.
-- This GitHub account [gloewing/fastFMM](https://github.com/gloewing/fastFMM) hosts the development version of fastFMM and can also be used to submit issues.
-- The following warning messages can occur
-  - `Warning messages: 1: In sqrt(Eigen\$values) : NaNs produced` -- this can occur when using bootstrap confidence intervals because of the used functional PCA functions. It can be safely ignored.
-  - `Warning in checkConv(attr(opt, "derivs"), opt, ctrl = control checkConv: Model failed to converge with max|grad` -- this is a`lme4\` warning message: for data sets with many observations or for models with many parameters (e.g., random effects, fixed effects), convergence warnings are not uncommon. This warning message comes from point-wise mixed model fits. Therefore if these warnings are issued for many points along the functional domain, you may want to consider your fixed or random effect specification. If the warning is only issued for a few points on the functional domain, you may not need to alter your model specification.
-  - `Warning in checkConv(attr(opt, "derivs"), opt.par, ctrl = control.checkConv, : Model is nearly unidentifiable: very large eigenvalue: - Rescale variables? Model is nearly unidentifiable: large eigenvalue ratio` -- This is a`lme4`warning message --This warning can frequently be resolved by scaling continuous covariates, for example, with the command`scale()`--For more information on the`lme4\` package, warning messages, model syntax and general mixed modeling information, see: Doug Bates. [lme4: Mixed-effects modeling with R](https://stat.ethz.ch/~maechler/MEMo-pages/lMMwR.pdf) (2022).
+Issues can be raised at the development version repo [awqx/fastFMM](https://github.com/awqx/fastFMM). You are welcome to contact us about `fastFMM` at [gloewinger\@gmail.com](mailto:gloewinger@gmail.com){.email} and [axin\@andrew.cmu.edu](mailto:axin@andrew.cmu.edu){.email} with any questions or error reports.
+
+### Common warning messages
+
+`Warning messages: 1: In sqrt(Eigen\$values) : NaNs produced` -- this can occur when using bootstrap confidence intervals because of the used functional PCA functions. It can be safely ignored.
+
+`Warning in checkConv(attr(opt, "derivs"), opt, ctrl = control checkConv: Model failed to converge with max|grad` -- this is a`lme4\` warning message: for data sets with many observations or for models with many parameters (e.g., random effects, fixed effects), convergence warnings are not uncommon. This warning message comes from point-wise mixed model fits. Therefore if these warnings are issued for many points along the functional domain, you may want to consider your fixed or random effect specification. If the warning is only issued for a few points on the functional domain, you may not need to alter your model specification.
+
+`Warning in checkConv(attr(opt, "derivs"), opt.par, ctrl = control.checkConv, : Model is nearly unidentifiable: very large eigenvalue: - Rescale variables? Model is nearly unidentifiable: large eigenvalue ratio`. This is a`lme4`warning message. This warning can frequently be resolved by scaling continuous covariates, for example, with the command `scale()`. For more information on the`lme4\` package, warning messages, model syntax and general mixed modeling information, see: Doug Bates. [lme4: Mixed-effects modeling with R](https://stat.ethz.ch/~maechler/MEMo-pages/lMMwR.pdf) (2022).
 
 ## References
 
