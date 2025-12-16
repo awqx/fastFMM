@@ -166,7 +166,7 @@ G_generate.fastFMM <- function(fmm, mum, MoM, ...) {
 #' @export
 #' @noRd
 #' @keywords internal
-# AX: Add back all_crossterms
+
 G_generate.fastFMMconc <- function(fmm, mum, i, j, MoM = 1, ...) {
 
   # Z_lst is the ZTlist (transposed) output from:

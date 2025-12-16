@@ -2,11 +2,11 @@ Package: fastFMM
 Type: Package
 Title: Fast Functional Mixed Models using Fast Univariate Inference
 Version: 1.0.0
-Date: 2025-12-04
+Date: 2025-12-08
 Authors@R: c(
-    person("Erjia", "Cui", role = c("aut", "cre"), email = "ecui@umn.edu"),
+    person("Erjia", "Cui", role = c("aut"), email = "ecui@umn.edu"),
     person("Gabriel", "Loewinger", role = "aut", email = "gloewinger@gmail.com"),
-    person("Al", "Xin", role = "aut", email = "axin@andrew.cmu.edu"))
+    person("Al", "Xin", role = c("aut", "cre"), email = "axin@andrew.cmu.edu"))
 Description: Implementation of the fast univariate inference approach (Cui et al. (2022) <doi:10.1080/10618600.2021.1950006>, Loewinger et al. (2024) <doi:10.7554/eLife.95802.2>, Xin et al. (2025)) for fitting functional mixed models. User guides and Python package information can be found at <https://github.com/gloewing/photometry_FLMM>.
 License: GPL (>= 3)
 Encoding: UTF-8

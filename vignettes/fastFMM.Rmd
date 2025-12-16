@@ -67,70 +67,71 @@ We describe applications of `fastFMM` to photometry signal analysis in [Loewinge
 
 ## Data organization
 
-The function `fastFMM::fui` requires that data be presented in a long format, i.e., with columns corresponding to locations on the functional domain $1, 2, \dots, L$ and with rows corresponding to longitudinal observations $t_{i, j}$. For example, within `fastFMM`, we provide the pre-formatted dataset `lick`, sourced from [Jeong et al. (2022)](https://doi.org/10.1126/science.abq6740). 
+The function `fastFMM::fui` requires that data be presented in a long format, i.e., with columns corresponding to locations on the functional domain $1, 2, \dots, L$ and with rows corresponding to longitudinal observations $t_{i, j}$. The functional variables can be single matrix columns or span multiple columns. 
+
+### Example data
+
+Within `fastFMM`, we provide the pre-formatted dataset `lick`, sourced from [Jeong et al. (2022)](https://doi.org/10.1126/science.abq6740). The `lick` dataset importable through `fastFMM` is a downsampled version of the original, containing half as many trials and half as many within-trial timepoints. The dataset contains $N = \sum_{i = 1}^I n_i$ rows, where $n_i$ is the number of repeated measures observations of subject/cluster $i$. The first three columns of the dataset include the covariates subject ID (`id`), session number (`session`), and trial number (`trial`). 
+
+The functional outcome and covariate (`photometry` and `lick`, respectively) are stored in matrix columns of dimension $N \times L$ each, where $L$ is the size of the functional domain. `lick` records whether a mouse is licking at some time, with indices aligned with the `photometry` recordings. `fastFMM::fui` automatically detects which of the covariates are functional with initial string matching, so the names of variables should be unique and not share prefixes. Furthermore, `fastFMM::fui` assumes any functional columns are ordered from left to right. 
 
 ```{r read lick}
 lick <- fastFMM::lick
 ```
 
-### General formatting
+### Matrix columns or multiple vector columns
 
-The columns `id, session, trial` correspond to trial-level covariates. The functional outcome of `photometry` is stored in the columns `photometry_1, photometry_2, ..., photometry_43` and the functional covariate `lick` is stored in the columns `lick_1, lick_2, ..., lick_43`. The `lick` dataset importable through `fastFMM` is a downsampled version of the original, containing half as many trials and half as many within-trial timepoints.
+As mentioned previously, the `photometry` and `lick` are matrix columns of dimension $N \times L$, where $n$ is the number of observations and $L$ is the length of the functional domain. 
 
-We provide the option to save functional outcomes and covariates as `AsIs` matrix columns. There are no particular modeling differences between these two data structures. Below is an example of how an `AsIs` matrix column might be created.
+```{r}
+class(lick$photometry)
+dim(lick$photometry)
+```
 
-```{r lick asis, eval = F}
-library(dplyr)
-lick_mat <- as.matrix(
-  dplyr::select(lick, lick_1:lick_43)
-)
-photometry_mat <- as.matrix(
-  dplyr::select(lick, photometry_1:photometry_43)
-)
+`fastFMM::fui` can also handle functional data where the functional variables are stored in multiple normal numeric columns with the same prefix. `fastFMM::fui()` can handle data in either form, and there are no particular modeling differences between matrices or separate numeric columns.Below is an example of how to convert the matrix format into separate columns.
 
-# I() makes the columns "AsIs"
-lick_asis <- data.frame(
-  id = lick$id, 
-  trial = lick$trial, 
-  session = lick$session, 
-  lick = I(lick_mat), 
-  photometry = I(photometry_mat)
+```{r}
+lick <- cbind(
+  lick %>% select(-photometry, -lick), 
+  # this unravels the matrices into data frames
+  as.data.frame(lick$photometry), 
+  as.data.frame(lick$lick)
 )
 ```
 
-In the remainder of this tutorial, we will continue to use the original data frame `lick`. 
+Now, the functional outcome of `photometry` is stored in the columns `photometry_1, photometry_2, ..., photometry_43` and the functional covariate `lick` is stored in the columns `lick_1, lick_2, ..., lick_43`. The remaining examples will include the latter (separate numeric columns) because it is somewhat easier to manipulate and visualize.  
 
 ### Scalar covariates
 
 In this dataset, we calculated `lick_rate_NNN` as an example trial-specific behavioral summary. The covariate `lick_rate_NNN` is the average licking rate in the `NNN` hundredths of seconds after the reward is delivered. E.g., `lick_rate_050` is the average licking rate 0.5 seconds after reward delivery. We provide calculated lick rates for four different time periods (0.5, 1.0, 1.5, and 2.0 seconds). We also provide the covariate `iri`, which corresponds to the inter-reward interval, though we do not model with it in this vignette.
 
 ```{r see scalars, echo = F}
-knitr::kable(lick[1:3, 1:7])
+lick %>% 
+  select(session:lick_rate_200) %>%
+  head(5) %>%
+  knitr::kable()
 ```
 
 ### Functional covariates
 
-Below is an excerpt from `lick`, ignoring the columns containing scalar trial-specific covariates.
+Below is an excerpt from `lick` with a few observations from the functional outcome of `photometry` and the functional covariate of `lick`.
 
 ```{r lick colnames, echo = F}
-knitr::kable(
-  lick %>%
+lick %>%
     select(id:trial, photometry_1:photometry_3, lick_1:lick_3) %>%
-    .[1:5, ]
-)
+    head(5) %>% 
+    knitr::kable()
 ```
-
-The data frame `lick` has $N = \sum_{i = 1}^I n_i$ rows, where $n_i$ is the number of repeated measures observations of subject/cluster $i$. The first three columns of the dataset include the covariates subject ID (`id`), session number (`session`), and trial number (`trial`). The functional outcome and covariate (`photometry` and `lick`, respectively) are stored in $L$ columns each, where $L$ is the size of the functional domain. The prefixes `photometry` and `lick` are arbitrary and can be replaced with any convenient outcome name. However, because `fastFMM::fui` uses initial string matching to find functional outcome and covariate columns, the identifying prefix substring should be unique and not shared with any other columns. Furthermore, `fastFMM::fui` assumes any functional columns are ordered from left to right. 
 
 ## Model-fitting
 
-Unless otherwise specified, `fastFMM::fui()` assumes a Gaussian family and provides inference based on an analytic form. To bootstrap confidence intervals, set the argument `analytic = FALSE`. The number of bootstrap replicates can be set with the argument `boot`, which defaults to `boot = 500`. 
+Unless otherwise specified, `fastFMM::fui()` assumes a Gaussian family and provides inference based on an analytic form. To bootstrap confidence intervals, set the argument `analytic = FALSE`. The number of bootstrap replicates can be set with the argument `boot`, which defaults to `boot = 500`. Within these examples, we will skip demonstrations of bootstrapped intervals to reduce the render time of the vignettes. 
 
 Both analytic and bootstrap inference can be sped up by parallelizing the univariate model-fitting with `parallel = TRUE`. For analytic variance calculation, `parallel = TRUE` also parallelizes the calculation of the fixed effects covariance matrix. The number of cores is calculated as `round(parallel::detectCores() * 0.75)` by default but can also be specified in `n_cores`. To speed up model comparisons, variance calculation can be skipped entirely by setting `var = FALSE`. `AIC` and `BIC` will still be naturally outputted in the model objects. 
 
 `fastFMM::fui()` uses the same mixed model formula structure as `lme4::lmer()`. The `family` argument is the standard GLM family from `R` `stats::glm()`. `fastFMM` allows for any family in the `glmer()` and `lmer()` functions offered by the `lme4` package. For any complex random effect structures (e.g., nested) or when more than one variable is specified on the right hand side of the `|` symbol in the random effects formula , the column name in the `data` data.frame corresponding to the subject-ID should be specified in the argument `subj_ID` to avoid any confusion. E.g., for a model with the random effect structure `(1 | id / trial)`, we would provide `fui()` with the argument `subj_ID = "id"`. 
 
-Providing a vector of indices of the functional outcome to `argvals` can be used to downsample model-fitting to only a subset of the functional domain. For example, `argvals = seq(from = 1, to = L, by = 3)` analyzes every third point of the functional outcome.
+Providing a vector of indices of the functional outcome to `argvals` can be used to downsample model-fitting to only a subset of the functional domain. For example, `argvals = seq(from = 1, to = L, by = 3)` analyzes every third point of the functional outcome. This is only compatible with bootstrapped variance estimates (i.e., `analytic = FALSE`).
 
 ### Non-concurrent FMM fitting
 
@@ -182,7 +183,7 @@ lick_rate_050 <- fui(
 
 ### Concurrent FMM fitting
 
-To fit a concurrent model, set the argument `concurrent = TRUE`. `fastFMM::fui()` will automatically detect which covariates are functional based on matching their names. We will skip over AIC/BIC calculation for brevity and fit a concurrent model with variance calculation. Importantly, we need to remove the scalar covariates `lick_rate_NNN` before model fitting because their names will interfere with detecting the columns for `lick`. Bootstrapped variance calculation is currently not compatible with concurrent modeling.
+To fit a concurrent model, set the argument `concurrent = TRUE`. `fastFMM::fui()` will automatically detect which covariates are functional based on matching their names. We will skip over AIC/BIC calculation for brevity and fit a concurrent model with variance calculation. Importantly, we need to remove the scalar covariates `lick_rate_NNN` before model fitting because their names will interfere with detecting the columns for `lick`.
 
 ```{r lick_conc}
 # Remove conflicting columns

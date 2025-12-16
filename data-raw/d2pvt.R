@@ -26,12 +26,21 @@ raw <- read.csv("data-raw/d2pvt/D2PVT_FLMM_input_HSMSvsHH2O.csv")
 # Trial_no is over all mice and session and is not informative
 d2pvt <- select(raw, -Trial_no)
 
-# In the original recordings, photometry readings are labeled as "X.[time]"
-# fastFMM::fui takes functional predictors in the form [variable]_[index], so X
-# will be relabeled as photometry_1, ..., photometry_n. The time stamps in the
-# column will be relevant later for aligning the trial length with the measures.
-colnames(d2pvt) <- c("id", "session", "outcome", "latency", "trial",
-                     paste0("photometry_", 1:(ncol(d2pvt) - 5)))
+# In the original recordings, photometry readings are labeled as "X[time]"
+# These will be placed in a matrix in d2pvt$photometry.
+
+# The time stamps in the column name will be relevant later for aligning the
+# trial length with the measures.
+
+photo_cols <- grep("^X", colnames(d2pvt))
+photometry <- d2pvt[, photo_cols]
+colnames(photometry) <- paste0("photometry_", 1:length(photo_cols))
+d2pvt <- d2pvt[, -photo_cols]
+# This renaming is just for clarity
+colnames(d2pvt) <- c("id", "session", "outcome", "latency", "trial")
+
+# add back photometry data
+d2pvt$photometry <- as.matrix(photometry)
 
 # Convert session from character to numeric
 d2pvt$session <- as.numeric(gsub("^S", "", d2pvt$session))
@@ -59,10 +68,9 @@ latencies <- raw$Approach_Latency
 rewarded <- do.call(rbind,
   lapply(latencies, function(x) as.numeric(times >= x))
 )
-rewarded <- data.frame(rewarded)
 colnames(rewarded) <- paste0("rewarded_", 1:length(times))
 # Join columns
-d2pvt <- cbind(d2pvt, rewarded)
+d2pvt$rewarded <- rewarded
 
 # Saving data ##################################################################
 

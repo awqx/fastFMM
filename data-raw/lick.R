@@ -52,6 +52,8 @@ pre_lick_reward_period  <- 0.5
 post_lick_reward_period <- 1 # 1 second after
 post_reward_length      <- 1.5 # 2 seconds after reward period ends
 
+silent <- F # boolean for suppressing messages
+
 # Functions ####################################################################
 
 # Read MATLAB files
@@ -262,12 +264,8 @@ get_lick_fun <- function(dat, trial_idx, downsample = T) {
     as.data.frame()
 }
 
-#
-#
-
 # Formatting data ##############################################################
 
-silent <- F # boolean for suppressing messages
 lick_list <- mapply(
   function(id, s) {
     # Create file name
@@ -334,5 +332,14 @@ lick_full <- do.call(rbind, lick_list)
 # downsample trials
 lick <- filter(lick_full, trial <= 50)
 rownames(lick) <- NULL
+
+# store multiple columns as matrix columns
+photometry <- lick %>% select(photometry_1:photometry_43) %>% as.matrix()
+lick_mat   <- lick %>% select(lick_1:lick_43) %>% as.matrix()
+
+lick <- lick %>% select(-photometry_1:-lick_43)
+lick$photometry <- photometry
+lick$lick <- lick_mat
+
 usethis::use_data(lick, overwrite = T)
 # save(lick, file = "data/lick.rda")

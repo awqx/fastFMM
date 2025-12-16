@@ -116,7 +116,6 @@
 #' ## random intercept only
 #' set.seed(1)
 #' DTI_use <- DTI[DTI$ID %in% sample(DTI$ID, 10),]
-#' DTI_use <- cbind(DTI_use[, c("visit", "sex", "ID")], data.frame(DTI_use$cca))
 #' fit_dti <- fui(
 #'   cca ~ visit + sex + (1 | ID),
 #'   data = DTI_use
@@ -157,102 +156,58 @@ fui <- function(
   # 0.0 Argument consistency checks ============================================
 
   # If doing parallel computing, set up the number of cores
-  # If n_cores is not specified, used 3/4ths of available cores
+  # If n_cores is not specified, pass warning and set as 1
   if (parallel & is.null(n_cores)) {
-    n_cores <- as.integer(round(parallel::detectCores() * 0.75))
-    if (n_cores < 2)
-      warning("Only 1 core detected for parallelization.")
-    if (!silent)
-      message("`n_cores` not specified, defaulting to ", n_cores)
-  }
+    warning("`n_cores` not specified for parallel = TRUE.", " ",
+            "Defaulting to no parallelization, i.e., single-core processing.")
+    parallel <- FALSE }
 
   # For non-Gaussian family, manually set variance to bootstrap inference
   if (family != "gaussian") {
     if (analytic & !silent) { # Notify user of conflict
-      message(
-        "Analytic variance is not supported for non-Gaussian models. ",
-        "Variance calculation will be done through bootstrap."
-      )
-    }
-    analytic <- FALSE
-  }
+      message("Analytic variance is not supported for non-Gaussian models. ",
+              "Variance calculation will be done through bootstrap.")}
+    analytic <- FALSE }
 
   # 0.1 Concurrent model checks ================================================
 
-  # Detect functional covariates by matching length to L
-  model_formula <- as.character(formula)
-  out_index <- grep(paste0("^", model_formula[2]), names(data))
-  if (is.null(argvals)) {
-    L <- length(out_index)
-  } else {
-    L <- length(argvals)
-  }
+  fun_covs <- get_functional_covariates(formula, data, silent)
+  fun_exists <- length(fun_covs) > 0
 
-  x_names <- all.vars(formula)[-1]
-  x_classes <- sapply(x_names, function(x) class(data[[x]]))
-  x_ncols <- sapply(
-    x_names,
-    function(x) length(grep(paste0("^", x), names(data)))
-  )
-  fun_covariates <- NULL # redundancy
-  fun_covariates <- unique(c(x_names[x_classes == "AsIs"], x_names[x_ncols == L]))
-  fun_exists <- length(fun_covariates) > 0
   if (fun_exists & !silent)
-    message(
-      "Functional covariate(s): ",
-      paste0(fun_covariates, collapse = ", ")
-    )
+    message("Functional covariate(s): ", paste0(fun_covs, collapse = ", "))
+
   # Check for inconsistencies with user-set concurrence argument
   if (concurrent & !fun_exists) {
-    stop(
-      "No functional covariates found for concurrent model fitting.", "\n",
-      "Incoporate functional covariates or set `concurrent = F` in args."
-    )
+    stop("No functional covariates found for concurrent model fitting.")
   } else if (!concurrent & fun_exists) {
-    warning(
-      "Functional covariates detected: ",
-      paste0(fun_covariates, collapse = ", "), "\n",
-      "Execution will continue, but consider setting `concurrent = TRUE`."
-    )
-  }
+    warning("Functional covariates detected while concurrent = FALSE: ",
+            paste0(fun_covs, collapse = ", "), "\n", "Execution will continue.")}
 
   # Check for the MoM estimator and coerce to 1
   if (concurrent & MoM == 2) {
-    warning(
-      "MoM = 2 is currently not supported for concurrent models. ",
-      "Calculation will proceed with MoM = 1."
-    )
-    MoM <- 1
-  }
+    warning("MoM = 2 is currently not supported for concurrent models. ",
+            "Calculation will proceed with MoM = 1.")
+    MoM <- 1 }
 
   # 0.0 Identifiability checks ==================================================
 
   all_vars <- all.vars(formula)
-  out_index <- grep(
-    paste0("^(", paste0(all_vars, collapse = "|"), ")"),
-    names(data)
-  )
+  out_index <- grep(paste0("^(", paste0(all_vars, collapse = "|"), ")"), names(data))
   temp <- data[, out_index]
   # Coerce characters, like IDs, to numerics
-  temp <- data.frame(
-    lapply(
-      temp,
-      function(col) {
-        if (is.numeric(col))
-          return(col)
-        as.numeric(as.factor(col))
-      }
-    )
-  )
+  temp <- data.frame(lapply(temp, function(col) {
+    if (is.numeric(col))
+      return(col)
+    as.numeric(as.factor(col))
+  }))
   col_var <- Rfast::colVars(as.matrix(temp))
   col_var_zero <- which(col_var == 0)
 
   if (length(col_var_zero) > 0) {
-    msg <- paste0(
-      "Columns with zero variance: ",
+    msg <- paste0("Columns with zero variance: ",
       paste0(names(temp)[col_var_zero], collapse = ", "), "\n",
-      "Model-fitting cannot continue due to non-identifiability."
-    )
+      "Model-fitting cannot continue due to non-identifiability.")
     ifelse(override_zero_var, warning(msg), stop(msg))
   }
 
@@ -274,7 +229,7 @@ fui <- function(
   if (!concurrent) {
     fmm <- do.call(new_fastFMM, fmm_params)
   } else {
-    fmm_params$fun_covariates <- fun_covariates
+    fmm_params$fun_covariates <- fun_covs
     fmm <- do.call(new_fastFMMconc, fmm_params)
   }
 
@@ -346,6 +301,7 @@ fui <- function(
 
   # Penalized splines smoothing and extract components (analytic)
   # Number of knots for regression coefficients
+  L <- length(fmm$argvals)
   nknots <- min(round(L / 2), nknots_min)
   # Number of knots for covariance matrix
   nknots_cov <- ifelse(is.null(nknots_min_cov), 35, nknots_min_cov)
@@ -493,7 +449,7 @@ fui <- function(
     )
   }
 
-  # Unfortumately, setting design_mat to FALSE doesn't save memory during
+  # Unfortunately, setting design_mat to FALSE doesn't save memory during
   # computation, but it will reduce the size of the outputted object
   if (!design_mat)
     var_res$designmat <- NULL

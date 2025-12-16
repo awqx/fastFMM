@@ -158,7 +158,6 @@ library(refund)
 ## random intercept only
 set.seed(1)
 DTI_use <- DTI[DTI$ID \%in\% sample(DTI$ID, 10),]
-DTI_use <- cbind(DTI_use[, c("visit", "sex", "ID")], data.frame(DTI_use$cca))
 fit_dti <- fui(
   cca ~ visit + sex + (1 | ID),
   data = DTI_use

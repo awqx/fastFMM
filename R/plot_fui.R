@@ -75,10 +75,10 @@ plot_fui <- function(fuiobj,
       plot_list[[r]] <- ggplot() +
         theme_classic() +
         theme(plot.title = element_text(hjust = 0.5, face = "bold")) +
-        geom_line(aes(x = s / x_rescale - align/x_rescale - 1/x_rescale, y = beta, color = "Estimate"),
-                  data = beta.hat.plt, alpha = 1, linewidth = 1) +
+        geom_line(aes(x = s / x_rescale - align/x_rescale - 1/x_rescale, y = beta),
+                  data = beta.hat.plt, alpha = 1, linewidth = 1, color = "black") +
         geom_hline(yintercept = 0, linetype = "dashed", color = "red") +
-        scale_colour_manual(name="", values=c("Estimate"="black")) +
+        # scale_colour_manual(name="", values=c("Estimate"="black")) +
         labs(x = xlab, y = bquote(paste(beta[.(r-1)], "(s)")),
              title = title_names[r]) +
         theme(legend.position = "none")
@@ -99,9 +99,9 @@ plot_fui <- function(fuiobj,
                     data = beta.hat.plt, fill = "gray20", alpha = 0.2) +
         geom_ribbon(aes(x = s / x_rescale - align/x_rescale - 1/x_rescale, ymax = upper, ymin = lower),
                     data = beta.hat.plt, fill = "gray10", alpha = 0.4) +
-        geom_line(aes(x = s / x_rescale - align/x_rescale - 1/x_rescale, y = beta, color = "Estimate"),
-                  data = beta.hat.plt, alpha = 1, linewidth = 1) +
-        scale_colour_manual(name="", values=c("Estimate"="black")) +
+        geom_line(aes(x = s / x_rescale - align/x_rescale - 1/x_rescale, y = beta),
+                  data = beta.hat.plt, alpha = 1, linewidth = 1, color = "black") +
+        # scale_colour_manual(name="", values=c("Estimate"="black")) +
         labs(x = xlab, y = bquote(paste(beta[.(r-1)], "(s)")),
              title = title_names[r]) +
         theme(legend.position = "none")

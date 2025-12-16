@@ -1,3 +1,5 @@
+# fastFMM 2.0.0
+
 # fastFMM 1.0.0
 
 * Added concurrent models to `fui()`, allowing for fitting data with both functional outcomes and functional covariates. 

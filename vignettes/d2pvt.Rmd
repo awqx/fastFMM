@@ -7,13 +7,13 @@ vignette: >
   %\VignetteEncoding{UTF-8}
 ---
 
-```{r, include = FALSE}
+```{r setup, include = FALSE}
 knitr::opts_chunk$set(
   collapse = TRUE, comment = "#>", cache = T
 )
 ```
 
-```{r setup}
+```{r libraries}
 suppressMessages(library(fastFMM))
 suppressMessages(library(dplyr))
 ```
@@ -50,10 +50,26 @@ d2pvt <- d2pvt %>%
   )
 ```
 
+The functional outcome of `photometry` (the measured signal) and the functional covariate of `rewarded` are encoded as $N \times L$ matrix columns within `d2pvt`, where $N$ is the total number of observations and $L$ is the size of the functional domain. It is sometimes convenient to unravel these matrices into separate columns, especially for visualization purposes. `fastFMM::fui` can handle functional data in either form, but make sure that the prefixes of all included variables are unique, or the function won't be able to correctly detect the proper functional outcome and covariates.
+
+```{r d2pvt columns}
+class(d2pvt$photometry)
+dim(d2pvt$photometry)
+```
+
+```{r unravel}
+d2pvt <- cbind(
+  d2pvt %>% select(-photometry, -rewarded), 
+  # this unravels the matrices into data frames
+  as.data.frame(d2pvt$photometry), 
+  as.data.frame(d2pvt$rewarded)
+)
+```
+
 For the concurrent model, it is also necessary to remove functional covariates with zero variance. In practice, the cutoff for the column variance may need to be higher than zero based on the other predictors and the total number of observations. Here, a cutoff of 0.01 is needed. An example of how `rewarded` is encoded is displayed below.
 
-```{r no all zeroes}
-# Remove columns of all zeros
+```{r no zero variance}
+# Remove columns of all zeros or all ones
 zero_var <- sapply(
   select(d2pvt, rewarded_1:rewarded_121), 
   function(x) 
@@ -71,7 +87,7 @@ d2pvt_nonzero <- d2pvt[, !colnames(d2pvt) %in% zero_var_cols]
 ```{r kable data, echo = FALSE}
 knitr::kable(
   d2pvt_nonzero %>%
-    select(id, trial, session, latency, rewarded_45:rewarded_50) %>%
+    select(id, latency, rewarded_45:rewarded_50) %>%
     head()
 )
 ```
@@ -120,9 +136,9 @@ concurrent <- fastFMM::fui(
 )
 ```
 
-**Note**: The concurrent model cannot fit timepoints when the functional covariates do not vary across animals or trials (i.e., have zero variance), so we fit to the data `d2pvt_nonzero`, a subset of `d2pvt`. In this case, the functional covariate `rewarded` is the same across all mice at the beginning and end of the trial.
+As previously mentioned, the concurrent model cannot fit timepoints when the functional covariates do not vary across animals or trials (i.e., have zero variance), so we fit to the data `d2pvt_nonzero`, a subset of `d2pvt`. In this case, the functional covariate `rewarded` is the same across all mice at the beginning and end of the trial.
 
-**Note**: The term `SMS * rewarded` implicitly includes the non-interaction terms `SMS + rewarded`. 
+**Note**: The term `SMS * rewarded` implicitly includes the non-interaction terms `SMS + rewarded`. In this case, because the effect of the strawberry milkshake should be zero unless the value of `rewarded` is 1, it would also be valid to recode the formula as `reward + SMS:rewarded`, removing the `SMS` term from the model. However, for visualization and clarity purposes, we do not make this modification.
 
 ## Interpretation and discussion
 
@@ -224,7 +240,7 @@ and the random effects are
 
 We can fit the non-concurrent model as follows:
 
-```{r fit nonco}
+```{r fit nonconcurrent}
 nonconcurrent <- fastFMM::fui(
   photometry ~ SMS * latency + (SMS | id), 
   d2pvt, 
