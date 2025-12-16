@@ -18,3 +18,6 @@ fui_conc\.Rmd
 ^data-raw$
 vignettes/d2pvt_cache/
 vignettes/fastFMM_cache/
+^cran-comments\.md$
+^README\.md$
+^\.github$

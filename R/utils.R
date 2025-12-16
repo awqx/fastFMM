@@ -47,7 +47,7 @@ get_functional_covariates <- function(frm, df, silent) {
     x_ismatrix_Ls <- sapply(x_ismatrix, get_L)
     if (sum(x_ismatrix_Ls != L) > 0)
       stop("Width of functional covariates not equal to outcome", "\n",
-           "Expected ", L, ", found ", paste0(x_matrix_Ls, collapse = ", "))
+           "Expected ", L, ", found ", paste0(x_ismatrix_Ls, collapse = ", "))
 
     x_ismatrix <- x_ismatrix[x_ismatrix_Ls == L]
   }

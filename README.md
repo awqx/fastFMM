@@ -1,3 +1,7 @@
+<!-- badges: start -->
+  [![R-CMD-check](https://github.com/awqx/fastFMM/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/awqx/fastFMM/actions/workflows/R-CMD-check.yaml)
+<!-- badges: end -->
+
 # fastFMM: Fast Functional Mixed Models using Fast Univariate Inference (FUI)
 
 ## Repository Description

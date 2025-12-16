@@ -158,6 +158,8 @@ library(refund)
 ## random intercept only
 set.seed(1)
 DTI_use <- DTI[DTI$ID \%in\% sample(DTI$ID, 10),]
+## clean conflicting predictor
+DTI_use$visit.time <- NULL
 fit_dti <- fui(
   cca ~ visit + sex + (1 | ID),
   data = DTI_use

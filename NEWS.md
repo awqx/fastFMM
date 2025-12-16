@@ -1,5 +1,3 @@
-# fastFMM 2.0.0
-
 # fastFMM 1.0.0
 
 * Added concurrent models to `fui()`, allowing for fitting data with both functional outcomes and functional covariates. 
@@ -7,6 +5,7 @@
 * Added documentation for various helpers, which are exported somewhat messily to allow for the main calculation of `fui()`.
 * Added datasets `lick` and `d2pvt` to demonstrate `fui()` in the vignettes `fastFMM` and `d2pvt`, respectively. These datasets replace the previously used synthetic data. 
 * Updated references to the concurrent model (Xin et al. (2025)) and the data (Jeong et al. (2022), Machen et al. (2025)).
+* Minor bug fix in `plot_fui()` to remove dependence on the deprecated `ggplot2::aes_string()` method.
 
 # fastFMM 0.4.0
 
