@@ -159,40 +159,29 @@ fui <- function(
 
   # If doing parallel computing, set up the number of cores
   # If n_cores is not specified, pass warning and set as 1
-  if (parallel & is.null(n_cores)) {
-    warning("`n_cores` not specified for parallel = TRUE.", " ",
-            "Defaulting to no parallelization, i.e., single-core processing.")
-    parallel <- FALSE }
+
+  parallel_checks <- check_parallel(parallel, n_cores, silent)
+  parallel <- parallel_checks$parallel
+  n_cores <- parallel_checks$n_cores
 
   # For non-Gaussian family, manually set variance to bootstrap inference
+
   if (family != "gaussian") {
     if (analytic & !silent) { # Notify user of conflict
       message("Analytic variance is not supported for non-Gaussian models. ",
               "Variance calculation will be done through bootstrap.")}
     analytic <- FALSE }
 
-  # 0.1 Concurrent model checks ================================================
+  # Check for functional covariates
 
-  fun_covs <- get_functional_covariates(formula, data, silent)
-  fun_exists <- length(fun_covs) > 0
-
-  if (fun_exists & !silent)
-    message("Functional covariate(s): ", paste0(fun_covs, collapse = ", "))
-
-  # Check for inconsistencies with user-set concurrence argument
-  if (concurrent & !fun_exists) {
-    stop("No functional covariates found for concurrent model fitting.")
-  } else if (!concurrent & fun_exists) {
-    warning("Functional covariates detected while concurrent = FALSE: ",
-            paste0(fun_covs, collapse = ", "), "\n", "Execution will continue.")}
-
+  fun_covs <- get_functional_covariates(formula, data, concurrent, silent)
   # Check for the MoM estimator and coerce to 1
   if (concurrent & MoM == 2) {
     warning("MoM = 2 is currently not supported for concurrent models. ",
             "Calculation will proceed with MoM = 1.")
     MoM <- 1 }
 
-  # 0.0 Identifiability checks ==================================================
+  # 0.1 Identifiability checks ==================================================
 
   all_vars <- all.vars(formula)
   out_index <- grep(paste0("^(", paste0(all_vars, collapse = "|"), ")"), names(data))

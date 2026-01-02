@@ -5,7 +5,8 @@
 * Added documentation for various helpers, which are exported somewhat messily to allow for the main calculation of `fui()`.
 * Added datasets `lick` and `d2pvt` to demonstrate `fui()` in the vignettes `fastFMM` and `d2pvt`, respectively. These datasets replace the previously used synthetic data. 
 * Updated references to the concurrent model (Xin et al. (2025)) and the data (Jeong et al. (2022), Machen et al. (2025)).
-* Minor bug fix in `plot_fui()` to remove dependence on the deprecated `ggplot2::aes_string()` method.
+* Minor bug fix in `plot_fui()`'s. Adding `geom_segment()` axes no longer rely on the deprecated `ggplot2::aes_string()` method.
+* Setting `parallel = TRUE` now requires `n_cores` to be manually specified. This avoids problems with asking for too many simultaneous processes on high-performance clusters if the user does not strictly specify the number of available threads. 
 
 # fastFMM 0.4.0
 

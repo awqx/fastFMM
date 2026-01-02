@@ -20,31 +20,47 @@ plot_fui(
 \arguments{
 \item{fuiobj}{A object returned from the \code{fui} function}
 
-\item{num_row}{An integer that specifies the number of rows the plots will be displayed on. Defaults to p/2, where p is the number of predictors.}
+\item{num_row}{An integer that specifies the number of rows the plots will be
+displayed on. Defaults to p/2, where p is the number of predictors.}
 
-\item{xlab}{A string that specifies the x-axis title (i.e., for the functional domain). Defaults to ``Functional Domain''}
+\item{xlab}{A string that specifies the x-axis title (i.e., for the
+functional domain). Defaults to ``Functional Domain''}
 
-\item{title_names}{A vector of strings that has length equal to number of covariates (plus intercept if relevant). Allows one to change the titles of the plots. Defaults to NULL which uses the variable names in the dataframe for titles.}
+\item{title_names}{A vector of strings that has length equal to number of
+covariates (plus intercept if relevant). Allows one to change the titles of
+the plots. Defaults to NULL which uses the variable names in the dataframe
+for titles.}
 
-\item{ylim}{A 2-dimensional vector that specifies limits of the y-axis in plots.}
+\item{ylim}{A 2-dimensional vector that specifies limits of the y-axis in
+plots.}
 
-\item{align_x}{A scalar: aligns the plot to a certain point on the functional domain and sets this as 0. This is particularly useful if the functional domain is time. Defaults to 0.}
+\item{align_x}{A scalar: aligns the plot to a certain point on the functional
+domain and sets this as 0. This is particularly useful if the functional
+domain is time. Defaults to 0.}
 
-\item{x_rescale}{A scalar: rescales the x-axis of plots which is especially useful if time is the functional domain and one wishes to, for example, account for the sampling rate. Defaults to 1.}
+\item{x_rescale}{A scalar: rescales the x-axis of plots which is especially
+useful if time is the functional domain and one wishes to, for example,
+account for the sampling rate. Defaults to 1.}
 
-\item{y_val_lim}{A positive scalar that extends the y-axis by a factor for visual purposes. Defaults to $1.10$. Typically does not require adjustment.}
+\item{y_val_lim}{A positive scalar that extends the y-axis by a factor for
+visual purposes. Defaults to $1.10$. Typically does not require adjustment.}
 
-\item{y_scal_orig}{A positive scalar that determines how much to reduce the length of the y-axis on the bottom. Defaults to 0.05. Typically does not require adjustment.}
+\item{y_scal_orig}{A positive scalar that determines how much to reduce the
+length of the y-axis on the bottom. Defaults to 0.05. Typically does not
+require adjustment.}
 
-\item{return}{Logical, indicating whether to return the data frame with the coefficient estimates and 95\% confidence intervals (CIs). Defaults to \code{FALSE}.}
+\item{return}{Logical, indicating whether to return the data frame with the
+coefficient estimates and 95\% confidence intervals (CIs). Defaults to
+\code{FALSE}.}
 }
 \value{
-Plots of point estimates and CIs. If \code{return = TRUE}, also returns
-a list where each element is a data frame with the coefficient estimates and 95\% confidence intervals (CIs).
+Plots of point estimates and CIs. If \code{return = TRUE}, also
+  returns a list where each element is a data frame with the coefficient
+  estimates and 95\% confidence intervals (CIs).
 }
 \description{
-Take a fitted \code{fui} object produced by \code{fastFMM::fui()} and
-plot the point estimates of fixed effects. When variance was calculated, the plot
+Take a fitted \code{fui} object produced by \code{fastFMM::fui()} and plot
+the point estimates of fixed effects. When variance was calculated, the plot
 function also returns 95\% pointwise and joint confidence intervals.
 }
 \examples{
@@ -64,9 +80,10 @@ Univariate Inference for Longitudinal Functional Models. \emph{Journal of
 Computational and Graphical Statistics}, 31(1), 219-230.
 
 Loewinger, G., Cui, E., Lovinger, D., Pereira, F. (2024). A
-Statistical Framework for Analysis of Trial-Level Temporal Dynamics in
-Fiber Photometry Experiments. \emph{eLife}, 95802.
+  Statistical Framework for Analysis of Trial-Level Temporal Dynamics in
+  Fiber Photometry Experiments. \emph{eLife}, 95802.
 }
 \author{
-Gabriel Loewinger \email{gloewinger@gmail.com}, Erjia Cui \email{ecui@umn.edu}
+Gabriel Loewinger \email{gloewinger@gmail.com}, Erjia Cui
+  \email{ecui@umn.edu}, Al W Xin \email{axin@andrew.cmu.edu}
 }

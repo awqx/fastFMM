@@ -23,6 +23,8 @@ if (!require("devtools")) install.packages("devtools")
 devtools::install_github("awqx/fastFMM")
 ```
 
+`devtools` also allows for the installation of a particular branch, though currently there are no active development branches outside of `main`. 
+
 ##  Package Usage
 
 See the [vignettes](https://github.com/awqx/fastFMM/tree/main/vignettes) for walkthroughs on the package functions. The vignette [fastFMM](https://github.com/awqx/fastFMM/blob/main/vignettes/fastFMM.Rmd) contains a broad introduction to using the concurrent and non-concurrent versions of the `fui` model-fitting function. The vignette [d2pvt](https://github.com/awqx/fastFMM/blob/main/vignettes/d2pvt.Rmd) details how to model experiments with variable trial length with a concurrent functional mixed model. 
@@ -36,9 +38,7 @@ See the [vignettes](https://github.com/awqx/fastFMM/tree/main/vignettes) for wal
 
 ## Dataset Links
 
-We provide the sample dataset `data/lick.rda`, a cleaned downsample of a dataset made publicly available by [Jeong et al. (2022)](https://doi.org/10.1126/science.abq6740) on [the DANDI archive](https://dandiarchive.org/dandiset/000351/draft).
-
-We also use experimental data from [Machen et al. (2025)](https://doi.org/10.1101/2025.03.10.642469) in the `d2pvt` vignette.
+We provide the two sample datasets `lick` and `d2pvt`, located in `data/`. `lick` is a cleaned downsample of a dataset made publicly available by [Jeong et al. (2022)](https://doi.org/10.1126/science.abq6740) on the DANDI archive, which contains the [original MATLAB files](https://dandiarchive.org/dandiset/000351/draft). `d2pvt` is a subsample of experimental data from [Machen et al. (2025)](https://doi.org/10.1101/2025.03.10.642469). 
 
 ## References
 
