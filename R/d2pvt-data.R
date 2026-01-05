@@ -16,9 +16,10 @@
 #'  \item{rewarded}{Whether the mouse had been rewarded by time point}
 #' }
 #'
-#' @source \url{https://doi.org/10.1101/2025.03.10.642469}. The encoding of
-#'   interoceptive-based predictions by the paraventricular nucleus of the
-#'   thalamus D2+ neurons. bioRxiv (2025).
+#' @source Machen B, Miller SN, Xin A, Lampert C, Assaf L, Tucker J, Herrell S,
+#'   Pereira F, Loewinger G, Beas S. The encoding of interoceptive-based
+#'   predictions by the paraventricular nucleus of the thalamus D2+ neurons.
+#'   bioRxiv (2025). \doi{10.1101/2025.03.10.642469}.
 #'
 #' @references Machen B, Miller SN, Xin A, Lampert C, Assaf L, Tucker J, Herrell
 #' S, Pereira F, Loewinger G, Beas S. The encoding of interoceptive-based

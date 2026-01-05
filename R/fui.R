@@ -58,8 +58,8 @@
 #' @param seed Numeric value used to make sure bootstrap replicate (draws) are
 #' correlated across functional domains for certain bootstrap approach
 #' @param subj_id Name of the variable that contains subject ID.
-#' @param n_cores Number of cores for parallelization. If not specified,
-#' defaults to 3/4ths of detected cores.
+#' @param n_cores Number of cores for parallelization. If greater than the
+#' value from `parallel::detectCores()`, defaults to one fewer than that value.
 #' @param caic Logical, indicating whether to calculate cAIC. Defaults to
 #' \code{FALSE}.
 #' @param randeffs Logical, indicating whether to return random effect estimates.

@@ -27,33 +27,3 @@
 #' 10.1126/science.abq6740. Epub 2022 Dec 23.
 
 "lick"
-
-#' Machen et al. (2025) variable trial length data
-#'
-#' Data from an experiment where mice ran through a maze where they received
-#' either a strawberry milkshake (SMS) or water (H2O) reward. Mice entered the
-#' reward zone at variable times.
-#'
-#' @format A data frame with 1335 rows and 248 columns:
-#' \describe{
-#'  \item{id}{Unique mouse ID}
-#'  \item{session}{Session}
-#'  \item{outcome}{The outcome of the trial, either SMS or H2O}
-#'  \item{SMS}{Redundant encoding for binary encoding of SMS reward}
-#'  \item{latency}{Time, in seconds, for mouse tor each the reward}
-#'  \item{trial}{Trial}
-#'  \item{photometry_1, ..., photometry_121}{Photometry recordings at time point}
-#'  \item{rewarded_1, ..., rewarded_121}{Whether the mouse had been rewarded by time point}
-#' }
-#'
-#' @source \url{https://doi.org/10.1101/2025.03.10.642469}. Briana Machen,
-#'   Sierra N. Miller, Al Xin, Carine Lampert, Lauren Assaf, Julia Tucker, Sarah
-#'   Herrell, Francisco Pereira, Gabriel Loewinger, Sofia Beas. The encoding of
-#'   interoceptive-based predictions by the paraventricular nucleus of the
-#'   thalamus D2+ neurons. DOI: 10.1101/2025.03.10.642469. bioRxiv (2025).
-
-"d2pvt"
-
-ignore_unused_imports <- function() {
-  dplyr::mutate
-}
