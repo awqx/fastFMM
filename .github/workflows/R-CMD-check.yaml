@@ -49,3 +49,16 @@ jobs:
         with:
           upload-snapshots: true
           build_args: 'c("--no-manual","--compact-vignettes=gs+qpdf")'
+
+      # Source - https://stackoverflow.com/a
+      # Posted by KrlSbin
+      # Retrieved 2026-01-05, License - CC BY-SA 4.0
+
+      # Below is Simon Harvan's answer to https://stackoverflow.com/questions/75931963
+      - name: Upload macOS log to Github
+        uses: actions/upload-artifact@v3
+        with:
+          name: nightly
+          path: /Users/runner/work/fastFMM/fastFMM/check/fastFMM.Rcheck/00check.log
+          retention-days: 10
+
