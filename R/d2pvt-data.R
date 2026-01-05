@@ -19,13 +19,7 @@
 #' @source Machen B, Miller SN, Xin A, Lampert C, Assaf L, Tucker J, Herrell S,
 #'   Pereira F, Loewinger G, Beas S. The encoding of interoceptive-based
 #'   predictions by the paraventricular nucleus of the thalamus D2+ neurons.
-#'   bioRxiv (2025). \doi{10.1101/2025.03.10.642469}.
-#'
-#' @references Machen B, Miller SN, Xin A, Lampert C, Assaf L, Tucker J, Herrell
-#' S, Pereira F, Loewinger G, Beas S. The encoding of interoceptive-based
-#' predictions by the paraventricular nucleus of the thalamus D2R+ neurons.
-#' bioRxiv [Preprint]. 2025 Aug 15:2025.03.10.642469. doi:
-#' 10.1101/2025.03.10.642469. PMID: 40161660; PMCID: PMC11952474.
+#'   bioRxiv (2025).
 
 "d2pvt"
 
