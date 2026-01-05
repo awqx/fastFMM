@@ -120,7 +120,8 @@ check_parallel <- function(is_parallel, num_cores, silent) {
     warning(
       "`n_cores` not specified for parallel = TRUE.", "\n",
       "Defaulting to no parallelization, i.e., single-core processing.", " ",
-      "For parallel processing, consider setting to 3/4ths of available cores."
+      "For parallel processing, consider using 3/4ths of available cores,", " ",
+      "i.e., setting `n_cores = 0.75 * parallel::detectCores()`."
     )
     correct_parallel <- FALSE
     correct_cores <- 1
