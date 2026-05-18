@@ -1,3 +1,5 @@
+# fastFMM (development version)
+
 # fastFMM 1.0.1
 
 * `fui()` now only calls `get_functional_covariates()` for `concurrent = TRUE`, preventing issues with finding columns with shared prefixes (#8)
