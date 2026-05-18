@@ -24,3 +24,4 @@ vignettes/fastFMM_cache/
 ^CRAN-SUBMISSION$
 ^\.positai$
 ^\.claude$
+^revdep$
