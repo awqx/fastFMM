@@ -1,9 +1,9 @@
 # fastFMM 1.0.1
 
-* Fix of issue 8: moved to only calling `get_functional_covariates` for `concurrent = TRUE`, preventing issues with finding columns with shared prefixes
+* `fui()` now only calls `get_functional_covariates()` for `concurrent = TRUE`, preventing issues with finding columns with shared prefixes (#8)
 * Rebuilt under R 4.6.0
-* Changed `print` to `message` during Step 3.1
-* Updated references to Xin et al. (2025) reflecting publication of the reviewed preprint on eLife
+* Step 3.1 in `G_estimate_randint()` now calls `message()` instead of `print()` to be consistent with other messages
+* References to Xin et al. (2025) reflect publication of the reviewed preprint on eLife
 * Additional comments and spacing changes in `fui.R`
 
 # fastFMM 1.0.0
