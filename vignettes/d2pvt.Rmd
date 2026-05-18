@@ -102,33 +102,31 @@ d2pvt_nonzero %>%
 
 Within this section, let $i$ index the mouse ID and $j$ index the trial. Furthermore, assume random effects and noise are Normally distributed. We specified the **concurrent** model as
 
-$$
-Y_{i, j}(s) = 
+$$Y_{i, j}(s) = 
 \beta_0 (s) + \gamma_{i, 0} (s) + 
 [\beta_1 (s) + \gamma_{i, 1} (s)] \texttt{SMS}_{i, j} +
 \beta_2 (s) \texttt{RZ}_{i, j} (s) + 
 \beta_3 (s) \texttt{SMS}_{i, j} \texttt{RZ}_{i, j} (s) + 
-\epsilon_{i, j} (s),
-$$
+\epsilon_{i, j} (s),$$
 
 where we define the covariates
 
--   $\texttt{RZ}_{i, j} (s)$: whether the mouse has received the reward , with 1 meaning rewarded and 0 meaning not yet rewarded by timepoint $s$, and
--   $\texttt{SMS}_{i, j}$: the trial outcome, where 1 indicates SMS reward and 0 indicates water reward.
+- $\texttt{RZ}_{i, j} (s)$: whether the mouse has received the reward , with 1 meaning rewarded and 0 meaning not yet rewarded by timepoint $s$, and
+- $\texttt{SMS}_{i, j}$: the trial outcome, where 1 indicates SMS reward and 0 indicates water reward.
 
 Within the data frame, the covariate $\texttt{RZ} (s_l)$ corresponds to the column `rewarded_l`, where $l$ is some integer indexing the functional domain.
 
 In this model, the fixed effects coefficients are interpreted as:
 
--   $\beta_0(s)$: the mean signal on a water trial at a timepoint $s$ when the reward has not yet been received, i.e., when $\texttt{RZ}_{i, j} (s) = \texttt{SMS}_{i, j} = 0$,
--   $\beta_1 (s)$: the mean difference in signal between SMS and water trials at a timepoint $s$ when the reward has not yet been received,
--   $\beta_2 (s)$: the average difference between approach and reward in water trials at time $s$, and
--   $\beta_3 (s)$: the difference in differences $A - B$ between A) the average signal difference between approach and reward on SMS trials, and B) the average difference in signal values between approach and reward on water trials (i.e., $\beta_2$), at trial timepoint $s$,
+- $\beta_0(s)$: the mean signal on a water trial at a timepoint $s$ when the reward has not yet been received, i.e., when $\texttt{RZ}_{i, j} (s) = \texttt{SMS}_{i, j} = 0$,
+- $\beta_1 (s)$: the mean difference in signal between SMS and water trials at a timepoint $s$ when the reward has not yet been received,
+- $\beta_2 (s)$: the average difference between approach and reward in water trials at time $s$, and
+- $\beta_3 (s)$: the difference in differences $A - B$ between A) the average signal difference between approach and reward on SMS trials, and B) the average difference in signal values between approach and reward on water trials (i.e., $\beta_2$), at trial timepoint $s$,
 
 and the random effects are interpreted as:
 
--   $\gamma_{i, 0} (s)$: the random intercept for mouse $i$, or the subject-specific average perturbation of $\beta_0 (s)$ such that $\beta_0 (s) + \gamma_{i, 0} (s)$ is the average signal for mouse $i$ on water trials at time $s$ when the reward has not yet been received, and
--   $\gamma_{i, 1} (s)$: the random slope for mouse $i$, or the subject-specific average perturbation of $\beta_1 (s)$ such that $\beta_1 (s) + \gamma_{i, 1} (s)$ is the average photometry signal change associated with being in an SMS trial for mouse $i$ at time $s$ when the reward has not yet been received.
+- $\gamma_{i, 0} (s)$: the random intercept for mouse $i$, or the subject-specific average perturbation of $\beta_0 (s)$ such that $\beta_0 (s) + \gamma_{i, 0} (s)$ is the average signal for mouse $i$ on water trials at time $s$ when the reward has not yet been received, and
+- $\gamma_{i, 1} (s)$: the random slope for mouse $i$, or the subject-specific average perturbation of $\beta_1 (s)$ such that $\beta_1 (s) + \gamma_{i, 1} (s)$ is the average photometry signal change associated with being in an SMS trial for mouse $i$ at time $s$ when the reward has not yet been received.
 
 The concurrent model can be fit as follows:
 
@@ -168,25 +166,21 @@ As an aside, the term `SMS * rewarded` implicitly includes the non-interaction t
 
 For convenience, we can restate the model in its expectation form to avoid writing out the noise. Furthermore, we can consider the induced marginal mean of the outcome, i.e., the expression after marginalizing over the random effects such that their expectation is zero. For each mouse $i$ and trial $j$, we have the covariate vector $\mathbf{X}_{i, j} (s) = [\texttt{SMS}_{i, j}, \texttt{RZ}_{i,j} (s)]^{\intercal}$. The expectation of the response given the covariates is:
 
-$$
-\mathbb{E} [Y_{i, j}(s) | \mathbf{X}_{i, j} (s) ] = 
+$$\mathbb{E} [Y_{i, j}(s) | \mathbf{X}_{i, j} (s) ] = 
 \beta_0 (s) + 
 \beta_1 (s) \texttt{SMS}_{i, j} +
 \beta_2 (s) \texttt{RZ}_{i, j} (s) + 
-\beta_3 (s) \texttt{SMS}_{i, j} \texttt{RZ}_{i, j} (s),
-$$
+\beta_3 (s) \texttt{SMS}_{i, j} \texttt{RZ}_{i, j} (s),$$
 
 which can be rearranged
 
-$$
-\mathbb{E} [Y_{i, j}(s) | \mathbf{X}_{i, j} (s) ] = 
+$$\mathbb{E} [Y_{i, j}(s) | \mathbf{X}_{i, j} (s) ] = 
 \beta_0 (s) + 
 \beta_1 (s) \texttt{SMS}_{i, j} +
 \texttt{RZ}_{i, j} (s) \left[
 \beta_2 (s)  + 
 \beta_3 (s) \texttt{SMS}_{i, j} \right]
-.
-$$
+.$$
 
 The second form helps illustrate why $\beta_1 (s)$ should be approximately zero for all values of $s$. The fixed coefficient $\beta_1 (s)$ captures the contribution of the type of reward, $\texttt{SMS}_{i, j}$, only when mouse $i$ on trial $j$ has not yet entered the reward zone, i.e., $\texttt{RZ}_{i, j} (s) = 0$.
 
@@ -194,12 +188,10 @@ The fixed coefficient $\beta_3 (s)$, or the fixed coefficient corresponding to t
 
 To see this, consider the expected signal for receiving an SMS reward (top) versus receiving a water reward (bottom):
 
-$$
-\mathbb{E} [Y_{i, j}(s) \mid \texttt{SMS}_{i, j} (s) = 1, \texttt{RZ}_{i, j} = 1] =
+$$\mathbb{E} [Y_{i, j}(s) \mid \texttt{SMS}_{i, j} (s) = 1, \texttt{RZ}_{i, j} = 1] =
 \beta_0 (s) + \beta_1 (s) + \beta_2 (s) + \beta_3 (s) ,  \\
 \mathbb{E} [Y_{i, j}(s) \mid \texttt{SMS}_{i, j} (s) = 0, \texttt{RZ}_{i, j} = 1] = 
-\beta_0 (s)  + \beta_2 (s).
-$$
+\beta_0 (s)  + \beta_2 (s).$$
 
 The difference between these two expectations is $\beta_1 (s) + \beta_3 (s)$, which is approximately $\beta_3 (s)$ if we consider that $\beta_1 (s) \approx 0$ across the domain.
 
@@ -224,33 +216,31 @@ Thus, this section exists to illustrate a shortcoming of a non-concurrent approa
 
 To model the problem with the trial latency, we can specify the **non-concurrent** model
 
-$$
-Y_{i, j}(s) = 
+$$Y_{i, j}(s) = 
 \beta_0 (s) + \gamma_{i, 0} (s) + 
 [\beta_1 (s) + \gamma_{i, 1} (s)] \texttt{SMS}_{i, j} +
 \beta_2 (s) \texttt{Lat}_{i, j} + 
 \beta_3 (s) \texttt{SMS}_{i, j} \texttt{Lat}_{i, j} + 
-\epsilon_{i, j} (s),
-$$
+\epsilon_{i, j} (s),$$
 
 where $Y_{i, j} (s)$ is the recorded photometry signal of mouse $i$, trial $j$, at trial timepoint $s$.
 
 We define the scalar covariates
 
--   $\texttt{SMS}_{i, j}$: the trial outcome, where $\texttt{SMS}_{i, j} = 1$ for a trial with strawberry milkshake (SMS) and $\texttt{SMS}_{i, j} = 0$ for water, and
--   $\texttt{Lat}_{i, j}$: the latency, in seconds, until mouse $i$ in trial $j$ received the food reward. To aid interpretation, we centered the latency values around the mean latency across all mice and trials. For example, $\texttt{Lat}_{i, j} < 0$ when mouse $i$ in trial $j$ ran the corridor faster than average and $\texttt{Lat}_{i, j} > 0$ when mouse $i$ in trial $j$ ran slower than average.
+- $\texttt{SMS}_{i, j}$: the trial outcome, where $\texttt{SMS}_{i, j} = 1$ for a trial with strawberry milkshake (SMS) and $\texttt{SMS}_{i, j} = 0$ for water, and
+- $\texttt{Lat}_{i, j}$: the latency, in seconds, until mouse $i$ in trial $j$ received the food reward. To aid interpretation, we centered the latency values around the mean latency across all mice and trials. For example, $\texttt{Lat}_{i, j} < 0$ when mouse $i$ in trial $j$ ran the corridor faster than average and $\texttt{Lat}_{i, j} > 0$ when mouse $i$ in trial $j$ ran slower than average.
 
 The fixed effect coefficients are
 
--   $\beta_0 (s)$: the mean signal at $s$ on water trials when a mouse responds with an average latency, i.e., when $\texttt{SMS}_{i, j} = \texttt{Lat}_{i, j} = 0$,
--   $\beta_1 (s)$: the mean difference in signals between SMS and water trials when a mouse responds with an average latency at timepoint $s$,
--   $\beta_2 (s)$: the change in mean signal associated with a one second increase in latency on water trials at timepoint $s$, and
--   $\beta_3 (s)$: the difference $A - B$ between A) the change in mean signal associated with a one second increase in latency on SMS trials at timepoint $s$ and B) the change in the mean signal associated with a one second increase in latency on water trials at timepoint $s$ (i.e., $\beta_2 (s)$),
+- $\beta_0 (s)$: the mean signal at $s$ on water trials when a mouse responds with an average latency, i.e., when $\texttt{SMS}_{i, j} = \texttt{Lat}_{i, j} = 0$,
+- $\beta_1 (s)$: the mean difference in signals between SMS and water trials when a mouse responds with an average latency at timepoint $s$,
+- $\beta_2 (s)$: the change in mean signal associated with a one second increase in latency on water trials at timepoint $s$, and
+- $\beta_3 (s)$: the difference $A - B$ between A) the change in mean signal associated with a one second increase in latency on SMS trials at timepoint $s$ and B) the change in the mean signal associated with a one second increase in latency on water trials at timepoint $s$ (i.e., $\beta_2 (s)$),
 
 and the random effects are
 
--   $\gamma_{i, 0} (s)$: the random intercept for mouse $i$, interpreted as the subject-specific perturbation of $\beta_0 (s)$ such that $\beta_0 (s) + \gamma_{i, 0} (s)$ is the average signal at point $s$ for mouse $i$ on trials with water reward and average latency, and
--   $\gamma_{i, 1} (s)$: the random slope for mouse $i$, interpreted as the subject-specific perturbation to $\beta_1 (s)$ such that $\beta_1 (s) + \gamma_{i, 1} (s)$ is the average signal change associated with SMS reward at time $s$ on mouse $i$ with average latency.
+- $\gamma_{i, 0} (s)$: the random intercept for mouse $i$, interpreted as the subject-specific perturbation of $\beta_0 (s)$ such that $\beta_0 (s) + \gamma_{i, 0} (s)$ is the average signal at point $s$ for mouse $i$ on trials with water reward and average latency, and
+- $\gamma_{i, 1} (s)$: the random slope for mouse $i$, interpreted as the subject-specific perturbation to $\beta_1 (s)$ such that $\beta_1 (s) + \gamma_{i, 1} (s)$ is the average signal change associated with SMS reward at time $s$ on mouse $i$ with average latency.
 
 We can fit the non-concurrent model as follows:
 
@@ -282,29 +272,23 @@ Although the non-concurrent model shows strong trends in the coefficients, they 
 
 We can better illustrate this by referring back to the non-concurrent model, copied below in expectation form for convenience. Let $\mathbf{X}_{i, j} = [\texttt{SMS}_{i, j}, \texttt{Lat}_{i, j}]^T$ be the covariate matrix for mouse $i$ and trial $j$.
 
-$$
-\mathbb{E} [Y_{i, j}(s) \mid \mathbf{X}_{i, j}] = 
+$$\mathbb{E} [Y_{i, j}(s) \mid \mathbf{X}_{i, j}] = 
 \beta_0 (s) + 
 \beta_1 (s) \texttt{SMS}_{i, j} +
 \beta_2 (s) \texttt{Lat}_{i, j} + 
-\beta_3 (s) \texttt{SMS}_{i, j} \texttt{Lat}_{i, j},
-$$
+\beta_3 (s) \texttt{SMS}_{i, j} \texttt{Lat}_{i, j},$$
 
 To explain the shape of $\beta_2 (s)$ (i.e., the fixed coefficient corresponding to `latency`), let's contrast the expected signal for average latency ($\texttt{Lat}_{i, j} = 0$) versus slower-than-average latency ($\texttt{Lat}_{i, j} = c > 0$ where $c$ is some arbitrary positive real value) on a water trial:
 
-$$
-\mathbb{E} [Y_{i, j}(s) \mid \texttt{SMS}_{i, j} = 0, \texttt{Lat}_{i, j} = c > 0] = \beta_0 (s) + c \beta_2 (s) \\
-\mathbb{E} [Y_{i, j}(s) \mid \texttt{SMS}_{i, j} = 0, \texttt{Lat}_{i, j} = 0] = \beta_0 (s).
-$$
+$$\mathbb{E} [Y_{i, j}(s) \mid \texttt{SMS}_{i, j} = 0, \texttt{Lat}_{i, j} = c > 0] = \beta_0 (s) + c \beta_2 (s) \\
+\mathbb{E} [Y_{i, j}(s) \mid \texttt{SMS}_{i, j} = 0, \texttt{Lat}_{i, j} = 0] = \beta_0 (s).$$
 
 The curve of $\beta_0 (s)$ reflects the expected signal for a mouse running an average latency. For some timepoints after the average latency, the first equation (slow mouse) reflects the expected photometry signal of a mouse that has not yet reached the reward while the second equation reflects a mouse that has just received the reward. Both equations contain $\beta_0 (s)$ (the intercept), but we assume that the slow mouse will have a lower expected signal. Thus, the negative contribution of $c \beta_2 (3)$ could be interpreted as offsetting the intercept for slow mice and may not be meaningfully related to the reward.
 
 The shape of the coefficient curve for the interaction `SMS:latency` also shows a dip. However, it is not the case that this implies that slow mice exhibit decreased average signal association with the SMS reward. Again, let's write out the expressions for different latencies in a SMS trial:
 
-$$
-\mathbb{E} [Y_{i, j}(s) \mid \texttt{SMS}_{i, j} = 1, \texttt{Lat}_{i, j} = c > 0] = \beta_0 (s) + \beta_1 (s) + c \beta_2 (s) + c \beta_3 (s) \\
-\mathbb{E} [Y_{i, j}(s) \mid \texttt{SMS}_{i, j} = 1, \texttt{Lat}_{i, j} = 0] = \beta_0 (s) + \beta_1 (s).
-$$
+$$\mathbb{E} [Y_{i, j}(s) \mid \texttt{SMS}_{i, j} = 1, \texttt{Lat}_{i, j} = c > 0] = \beta_0 (s) + \beta_1 (s) + c \beta_2 (s) + c \beta_3 (s) \\
+\mathbb{E} [Y_{i, j}(s) \mid \texttt{SMS}_{i, j} = 1, \texttt{Lat}_{i, j} = 0] = \beta_0 (s) + \beta_1 (s).$$
 
 We encounter a similar problem, where for some $s$ after the reward is received, the expression when conditioning on slow latencies contains the expression capturing the signal on average latencies. Thus, the shape of $\beta_3 (s)$ (corresponding to `SMS:latency` in the plot) may be explained as a compensation for the strongly positive $\beta_2 (s)$ (`SMS`) main effect functional coefficient for slower-than-average mice.
 

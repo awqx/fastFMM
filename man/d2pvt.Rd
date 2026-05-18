@@ -21,7 +21,7 @@ A data frame with 1335 rows and 248 columns:
 Machen B, Miller SN, Xin A, Lampert C, Assaf L, Tucker J, Herrell S,
   Pereira F, Loewinger G, Beas S. The encoding of interoceptive-based
   predictions by the paraventricular nucleus of the thalamus D2+ neurons.
-  bioRxiv (2025). \doi{10.1101/2025.03.10.642469}.
+  bioRxiv (2025).
 }
 \usage{
 d2pvt
@@ -30,12 +30,5 @@ d2pvt
 Data from an experiment where mice ran through a maze where they received
 either a strawberry milkshake (SMS) or water (H2O) reward. Mice entered the
 reward zone at variable times.
-}
-\references{
-Machen B, Miller SN, Xin A, Lampert C, Assaf L, Tucker J, Herrell
-S, Pereira F, Loewinger G, Beas S. The encoding of interoceptive-based
-predictions by the paraventricular nucleus of the thalamus D2R+ neurons.
-bioRxiv [Preprint]. 2025 Aug 15:2025.03.10.642469. doi:
-10.1101/2025.03.10.642469. PMID: 40161660; PMCID: PMC11952474.
 }
 \keyword{datasets}

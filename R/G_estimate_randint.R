@@ -27,7 +27,7 @@ G_estimate_randint <- function(
 ) {
 
   if(silent == FALSE)
-    print("Step 3.1: MoM Covariance Estimator: Only Random Intercept Case")
+    message("Step 3.1: MoM Covariance Estimator: Only Random Intercept Case")
 
   data <- fmm$data
   out_index <- fmm$out_index

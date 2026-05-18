@@ -5,7 +5,6 @@
 #'
 #' @param frm the model formula passed to `fui()`
 #' @param df the data frame passed to `fui()`
-#' @param is_concurrent the boolean argument for `concurrent` passed to `fui()`
 #' @param silent logical for message printing, inherited from `fui()`
 #'
 #' @return chr vector of detected valid functional covariates
@@ -13,7 +12,7 @@
 #' @noRd
 #' @keywords internal
 
-get_functional_covariates <- function(frm, df, is_concurrent, silent) {
+get_functional_covariates <- function(frm, df, silent) {
   # helper function that gets functional domain length from name
   get_L <- function(column_name) {
     col_indxs <- grep(paste0("^", column_name), names(df))
@@ -32,7 +31,7 @@ get_functional_covariates <- function(frm, df, is_concurrent, silent) {
   # Get covariate names
   x_names <- all.vars(frm)[-1]
 
-  # Case 1: functional covariates are encoded in a matrix ######################
+  # Case 1: functional covariates are encoded in a matrix ======================
 
   # check if any covariates correspond to a multidimensional class
   x_ismatrix <- sapply(x_names,
@@ -53,7 +52,7 @@ get_functional_covariates <- function(frm, df, is_concurrent, silent) {
     x_ismatrix <- x_ismatrix[x_ismatrix_Ls == L]
   }
 
-  # Case 2: functional covariates are multiple columns #########################
+  # Case 2: functional covariates are multiple columns =========================
 
   # count number of columns associated with each covariate name
   x_ncols <- sapply(x_names,
@@ -62,19 +61,19 @@ get_functional_covariates <- function(frm, df, is_concurrent, silent) {
   x_ncols <- x_names[x_ncols > 1]
 
   if (length(x_ncols) > 0) {
-    if (!silent)
-      message("Detected functional covariates by shared column names: ",
-              paste0(x_ncols, collapse = ", "))
+    if (!silent) message(
+      "Detected functional covariates by shared column names: ",
+      paste0(x_ncols, collapse = ", "))
 
     x_ncols_Ls <- sapply(x_ncols, get_L)
-    if (sum(x_ncols_Ls != L) > 0)
-      stop("Width of functional covariates not equal to outcome", "\n",
-           "Expected L = ", L, ", found ", paste0(x_ncols_Ls, collapse = ", "))
+    if (sum(x_ncols_Ls != L) > 0) stop(
+      "Width of functional covariates not equal to outcome", "\n",
+      "Expected L = ", L, ", found ", paste0(x_ncols_Ls, collapse = ", "))
 
     x_ncols <- x_ncols[x_ncols_Ls == L]
   }
 
-  # Checking argument consistency ##############################################
+  # Checking argument consistency ==============================================
 
   fun_covs <- c(x_ismatrix, x_ncols)
   fun_exists <- length(fun_covs) > 0
@@ -82,16 +81,8 @@ get_functional_covariates <- function(frm, df, is_concurrent, silent) {
   if (fun_exists & !silent)
     message("Functional covariate(s): ", paste0(fun_covs, collapse = ", "))
 
-  # Check for inconsistencies with user-set concurrence argument
-  if (is_concurrent & !fun_exists) {
-    stop("No functional covariates found for concurrent model fitting.")
-  } else if (!is_concurrent & fun_exists) {
-    warning(
-      "Functional covariates detected while concurrent = FALSE: ",
-      paste0(fun_covs, collapse = ", "), "\n",
-      "Check that column names have unique prefixes. ",
-      "Execution will continue assuming a non-concurrent fit.")
-  }
+  # Stops `fui` function execution
+  if (!fun_exists) stop("No functional covariates found.")
 
   fun_covs
 }

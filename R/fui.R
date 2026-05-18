@@ -165,16 +165,12 @@ fui <- function(
   n_cores <- parallel_checks$n_cores
 
   # For non-Gaussian family, manually set variance to bootstrap inference
-
   if (family != "gaussian") {
     if (analytic & !silent) { # Notify user of conflict
       message("Analytic variance is not supported for non-Gaussian models. ",
               "Variance calculation will be done through bootstrap.")}
     analytic <- FALSE }
 
-  # Check for functional covariates
-
-  fun_covs <- get_functional_covariates(formula, data, concurrent, silent)
   # Check for the MoM estimator and coerce to 1
   if (concurrent & MoM == 2) {
     warning("MoM = 2 is currently not supported for concurrent models. ",
@@ -184,14 +180,16 @@ fui <- function(
   # 0.1 Identifiability checks ==================================================
 
   all_vars <- all.vars(formula)
-  out_index <- grep(paste0("^(", paste0(all_vars, collapse = "|"), ")"), names(data))
+  out_index <- grep(
+    paste0("^(", paste0(all_vars, collapse = "|"), ")"), names(data))
   temp <- data[, out_index]
   # Coerce characters, like IDs, to numerics
-  temp <- data.frame(lapply(temp, function(col) {
-    if (is.numeric(col))
-      return(col)
-    as.numeric(as.factor(col))
-  }))
+  temp <- data.frame(
+    lapply(
+      temp,
+      function(col) {
+        if (is.numeric(col)) return(col)
+        as.numeric(as.factor(col))}))
   col_var <- Rfast::colVars(as.matrix(temp))
   col_var_zero <- which(col_var == 0)
 
@@ -199,11 +197,11 @@ fui <- function(
     msg <- paste0("Columns with zero variance: ",
       paste0(names(temp)[col_var_zero], collapse = ", "), "\n",
       "Model-fitting cannot continue due to non-identifiability.")
-    ifelse(override_zero_var, warning(msg), stop(msg))
-  }
+    ifelse(override_zero_var, warning(msg), stop(msg))}
 
   # 0.2 Create the reference object ============================================
 
+  # shared parameters for concurrent and non-concurrent models
   fmm_params <- list(
     formula = formula,
     data = data,
@@ -214,15 +212,14 @@ fui <- function(
     caic = caic,
     randeffs = randeffs,
     var = var,
-    analytic = analytic
-  )
+    analytic = analytic)
 
   if (!concurrent) {
     fmm <- do.call(new_fastFMM, fmm_params)
   } else {
+    fun_covs <- get_functional_covariates(formula, data, silent)
     fmm_params$fun_covariates <- fun_covs
-    fmm <- do.call(new_fastFMMconc, fmm_params)
-  }
+    fmm <- do.call(new_fastFMMconc, fmm_params)}
 
   # 0.3 Impute missing values ==================================================
 
@@ -233,14 +230,15 @@ fui <- function(
   # rows with missing outcome values
   missing_rows <- which(rowSums(is.na(data[, out_index])) != 0 )
 
+  # handle missing values with imputation or removal
   if (length(missing_rows) != 0) {
     if(analytic & impute_outcome) {
-      message(
-        paste(
+      if (!silent)
+        message(paste(
           "Imputing", sum(is.na(data[, out_index])),
-          "values in functional response with longitudinal functional PCA"
-        )
-      )
+          "values in functional response with longitudinal functional PCA"))
+
+      # Detect multiple column or matrix column encoding
       if (length(out_index) != 1) {
         nknots_fpca <- min(round(length(out_index) / 2), 35)
         if (is.null(argvals) | analytic)
@@ -248,11 +246,8 @@ fui <- function(
         tmp <- as.matrix(data[, out_index])
         tmp[which(is.na(tmp))] <- suppressWarnings(
           refund::fpca.face(
-            tmp,
-            argvals = argvals,
-            knots = nknots_fpca
-          )$Yhat[which(is.na(tmp))]
-        )
+            tmp, argvals = argvals, knots = nknots_fpca
+          )$Yhat[which(is.na(tmp))])
         data[,out_index] <- tmp
       } else {
         data[, out_index][which(is.na(data[, out_index]))] <- suppressWarnings(
@@ -260,22 +255,20 @@ fui <- function(
             as.matrix(data[, out_index]),
             argvals = argvals,
             knots = nknots_fpca
-          )$Yhat[which(is.na(data[, out_index]))]
-        )
-      }
+          )$Yhat[which(is.na(data[, out_index]))])}
     } else if (analytic & !impute_outcome) {
       message(
         paste(
           "Removing", length(missing_rows),
           "rows with missing functional outcome values.", "\n",
           "To impute missing outcome values with FPCA, set fui() argument: \n",
-          "impute_outcome = TRUE"
-        )
-      )
+          "impute_outcome = TRUE"))
       # remove data with missing rows
       data <- data[-missing_rows, ]
     }
+
     fmm$data <- data
+
   }
 
   # 1 Massively univariate mixed models #######################################
@@ -309,9 +302,7 @@ fui <- function(
   HHat <- t(
     apply(
       mum$sigmausqHat, 1,
-      function(b) stats::smooth.spline(x = argvals, y = b)$y
-    )
-  )
+      function(b) stats::smooth.spline(x = argvals, y = b)$y))
   ind_var <- which(grepl("var", rownames(HHat)) == TRUE)
   HHat[ind_var, ][which(HHat[ind_var, ] < 0)] <- 0
 
@@ -322,53 +313,50 @@ fui <- function(
     betaHat <- matrix(NA, nrow = p, ncol = L)
     lambda <- rep(NA, p)
 
-    # NB: although s() is loaded from mgcv, mgcv::s will break.
+    # Although s() is loaded from mgcv, mgcv::s will break.
     # Spacedman describes this here: stackoverflow.com/a/20694106
     # Solution: Import mgcv in full and be careful of collisions in future
+
     for (r in 1:p) {
       fit_smooth <- mgcv::gam(
         betaTilde[r,] ~ s(argvals, bs = splines, k = nknots + 1),
-        method = smooth_method
-      )
+        method = smooth_method)
       betaHat[r,] <- fit_smooth$fitted.values
-      lambda[r] <- fit_smooth$sp # Smoothing parameter
+      # smoothing parameter
+      lambda[r] <- fit_smooth$sp
     }
 
     sm <- mgcv::smoothCon(
       s(argvals, bs = splines, k = nknots + 1),
       data = data.frame(argvals = argvals),
-      absorb.cons = TRUE
-    )
+      absorb.cons = TRUE)
     S <- sm[[1]]$S[[1]] # Penalty matrix
     B <- sm[[1]]$X # Basis functions
     rm(fit_smooth, sm)
   } else {
     betaHat <- t(
       apply(
-        betaTilde,
-        1,
+        betaTilde, 1,
         function(x) {
           mgcv::gam(
             x ~ s(argvals, bs = splines, k = nknots + 1),
             method = smooth_method
-          )$fitted.values
-        }
-      )
-    )
+          )$fitted.values}))
   }
+
   rownames(betaHat) <- rownames(betaTilde)
+
   # Discard the original estimates if not asked for
   if (!unsmooth) rm(betaTilde)
   colnames(betaHat) <- 1:L
 
-  # Save a convenient list to pass to variance calculation
+  # Save a list to pass to variance calculation
   smoothed <- list(
     betaHat = betaHat,
     HHat = HHat,
     S = S,
     B = B,
-    lambda = lambda
-  )
+    lambda = lambda)
 
   # 3 Variance estimation #####################################################
 
@@ -378,8 +366,7 @@ fui <- function(
     betaHat = smoothed$betaHat,
     HHat = smoothed$HHat,
     argvals = argvals,
-    aic = mum$AIC_mat
-  )
+    aic = mum$AIC_mat)
 
   if (unsmooth) res$betaTilde <- betaTilde
 
@@ -390,15 +377,11 @@ fui <- function(
         paste0(
           "Complete!", "\n",
           " - Use plot_fui() function to plot estimates", "\n",
-          " - For more information, run the command:  ?plot_fui"
-        )
-      )
-    }
+          " - For more information, run the command:  ?plot_fui")) }
     return(res)
   }
 
-  # At this point, the function either chooses analytic or bootstrap inference
-  # Uses bootstrap in the non-analytic case
+  # At this point, the function proceeds with analytic or bootstrap inference
 
   if (analytic) {
 
@@ -414,38 +397,34 @@ fui <- function(
       seed,
       parallel,
       n_cores,
-      silent
-    )
+      silent)
   } else {
 
     # 3.2 Bootstrap inference ==================================================
 
     var_res <- var_bootstrap(
-      fmm = fmm,
-      mum = mum,
-      nknots_min = nknots_min,
-      nknots_min_cov = nknots_min_cov,
-      nknots_fpca = nknots_fpca,
-      betaHat = betaHat,
-      data = data,
-      L = L,
-      n_boots = n_boots,
-      boot_type = boot_type,
-      seed = seed,
-      parallel = parallel,
-      n_cores = n_cores,
-      smooth_method = smooth_method,
-      splines = splines,
-      silent = silent
-    )
+      fmm,
+      mum,
+      nknots_min,
+      nknots_min_cov,
+      nknots_fpca,
+      betaHat,
+      data,
+      L,
+      n_boots,
+      boot_type,
+      seed,
+      parallel,
+      n_cores,
+      smooth_method,
+      splines,
+      silent)
   }
 
   # Unfortunately, setting design_mat to FALSE doesn't save memory during
   # computation, but it will reduce the size of the outputted object
-  if (!design_mat)
-    var_res$designmat <- NULL
-  if (unsmooth)
-    var_res$betaTilde <- betaTilde
+  if (!design_mat) var_res$designmat <- NULL
+  if (unsmooth) var_res$betaTilde <- betaTilde
 
   if (!silent)
     message(

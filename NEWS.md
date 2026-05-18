@@ -1,3 +1,11 @@
+# fastFMM 1.0.1
+
+* Fix of issue 8: moved to only calling `get_functional_covariates` for `concurrent = TRUE`, preventing issues with finding columns with shared prefixes
+* Rebuilt under R 4.6.0
+* Changed `print` to `message` during Step 3.1
+* Updated references to Xin et al. (2025) reflecting publication of the reviewed preprint on eLife
+* Additional comments and spacing changes in `fui.R`
+
 # fastFMM 1.0.0
 
 * Added concurrent models to `fui()`, allowing for fitting data with both functional outcomes and functional covariates. 

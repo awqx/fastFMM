@@ -36,12 +36,8 @@ Mingkang
 MoM
 Mohan
 Namboodiri
-PMC
-PMCID
-PMID
 Pereira
 Photometry
-Preprint
 RZ
 SMS
 Smirnova
@@ -62,6 +58,7 @@ cdot
 coefficents
 cov
 cran
+detectCores
 doi
 downsample
 downsampled
@@ -95,7 +92,6 @@ randint
 rdrr
 reb
 texttt
-ths
 unimm
 unsmoothed
 walkthrough

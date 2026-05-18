@@ -95,8 +95,8 @@ correlated across functional domains for certain bootstrap approach}
 
 \item{subj_id}{Name of the variable that contains subject ID.}
 
-\item{n_cores}{Number of cores for parallelization. If not specified,
-defaults to 3/4ths of detected cores.}
+\item{n_cores}{Number of cores for parallelization. If greater than the
+value from `parallel::detectCores()`, defaults to one fewer than that value.}
 
 \item{caic}{Logical, indicating whether to calculate cAIC. Defaults to
 \code{FALSE}.}

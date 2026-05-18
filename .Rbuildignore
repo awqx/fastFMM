@@ -21,3 +21,6 @@ vignettes/fastFMM_cache/
 ^cran-comments\.md$
 ^README\.md$
 ^\.github$
+^CRAN-SUBMISSION$
+^\.positai$
+^\.claude$

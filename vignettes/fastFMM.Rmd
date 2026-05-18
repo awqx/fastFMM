@@ -53,12 +53,10 @@ library(fastFMM)
 
 Let $Y_{i, j} (s)$ be observations of multi-level/longitudinal functional data on the compact functional domain $\mathcal{S} = \{s_1, s_2, \dots, s_L\}$. Let $i = 1, 2, ..., I$ be the index of the subject and $j = 1, 2, ..., J_i$ be the index of longitudinal visit at time $t_{i, j}$. For each visit of each subject, we observe the fixed effects column vector $\mathbf{X}_{i, j} = [X_{i, j, 1}, X_{i, j, 2}, \dots, X_{i, j, p}]^T \in \mathbb{R}^p$ and the random effects column vector $\mathbf{Z}_{ij} = [Z_{i, j, 1}, Z_{i, j, 2}, ..., Z_{i, j, q}]^T \in \mathbb{R}^q$. Let $g(\cdot)$ be some pre-specified link function and $EF(\cdot)$ be some exponential family distribution. A longitudinal function-on-scalar regression model has the form
 
-$$
-\begin{aligned} 
+$$\begin{aligned} 
   & Y_{ij}(s) \sim EF\{\mu_{ij}(s)\}, \\
   & g\{\mu_{ij}(s)\} = \eta_{ij}(s) = \boldsymbol{X}_{ij}^T\boldsymbol{\beta}(s) + \boldsymbol{Z}_{ij}^T\boldsymbol{u}_i(s),
-\end{aligned} 
-$$
+\end{aligned} $$
 
 referred to as a functional mixed model (FMM) in the functional data analysis (FDA) literature. Many statistical methods have been proposed to fit FMMs, and generally fall into two categories: joint methods and marginal methods. FUI is a marginal method that is computationally fast and achieves similar estimation accuracy compared with the state-of-the-art joint method, such as the `refund::pffr()` function.
 
@@ -66,12 +64,10 @@ FUI consists of the following three steps:
 
 1.  *Fit univariate models*. Fit separate linear mixed models at every point along the functional domain $\mathcal{S}$. That is, at each location $s_l \in \mathcal{S}, l = 1, 2, ..., L$, we fit a pointwise generalized linear mixed model (GLMM) of the form
 
-$$
-\begin{aligned} 
+$$\begin{aligned} 
   & Y_{i, j}(s_l) \sim EF\{\mu_{i,j}(s_l)\}, \\
   & g\{\mu_{i, j}(s_l)\} = \eta_{i,j}(s_l) = \boldsymbol{X}_{i,j}^T\boldsymbol{\beta}(s_l) + \boldsymbol{Z}_{i,j}^T\boldsymbol{u}_i(s_l),
-\end{aligned}
-$$ where $\boldsymbol{\beta}(s_l)$ is a $p \times 1$ dimensional vector of fixed effects and $\boldsymbol{u}_i(s_l)$ is a $q \times 1$ dimensional vector of random effects. Let $\boldsymbol{\tilde{\beta}}(s_1), \boldsymbol{\tilde{\beta}}(s_2), ..., \boldsymbol{\tilde{\beta}}(s_L)$ be the estimates of fixed effects from $L$ separate univariate GLMMs.
+\end{aligned}$$ where $\boldsymbol{\beta}(s_l)$ is a $p \times 1$ dimensional vector of fixed effects and $\boldsymbol{u}_i(s_l)$ is a $q \times 1$ dimensional vector of random effects. Let $\boldsymbol{\tilde{\beta}}(s_1), \boldsymbol{\tilde{\beta}}(s_2), ..., \boldsymbol{\tilde{\beta}}(s_L)$ be the estimates of fixed effects from $L$ separate univariate GLMMs.
 
 2.  *Smooth coefficients*. Using penalized splines, aggregate and smooth the coefficient estimates $\boldsymbol{\tilde{\beta}}(s_1), \boldsymbol{\tilde{\beta}}(s_2), ..., \boldsymbol{\tilde{\beta}}(s_L)$ to produce estimates $\{\boldsymbol{\hat{\beta}}(s), s \in \mathcal{S}\}$.
 3.  *Build pointwise and joint confidence intervals*. Combine the within-timepoint variance and the between-timepoint covariance to create confidence bands around the smoothed estimates from Step 2. For Gaussian data, we can obtain these estimates analytically. For other distributions, we implement cluster bootstrap.
@@ -253,28 +249,28 @@ names(lick_conc_outs)
 
 ### Additional `fui()` arguments
 
--   `silent` (default `FALSE`) controls whether `fui()` outputs the status of the code at each step.
--   `nknots_min` (default is $L/2$) sets the number of knots for smoothing.
--   `smooth_method` (default `"GCV.Cp"`) sets the method for tuning the smoothing hyperparameter (see `mgcv` package for more information). Options are `GCV` and `GCV.Cp` and `REML`.
--   `splines` (default `"tp"`) controls the type of spline. See the `smooth.terms` page from the `mgcv` package for more information. Options include `"tp"`, `"ts"`, `"cr"`, `"cs"` `"te"`, `"ds"`, `"bs"`, `"gp"`, etc.
--   `design_mat` (default `FALSE`) specifies whether the design matrix is returned.
--   `residuals` (default `FALSE`) specifies whether the residuals of the univariate GLMM fits are returned.
--   `G_return` (default `FALSE`) specifies whether the covariance matrices $G()$ are returned. See [Cui et al. (2022)](https://doi.org/10.1080/10618600.2021.1950006) for more information.
--   `caic` (default `FALSE`) specifies whether the conditional AIC model fit criteria are returned alongside `AIC` and `BIC`. Conditional AIC is calculated with [cAIC4](https://cran.r-project.org/package=cAIC4).
--   `REs` (default `FALSE`) specifies whether the BLUP random effect estimates from the univariate GLMM fits are returned. These estimates are directly taken from the output of `lmer()` and `glmer()`.
--   `non_neg` (default `non_nef = 0`) specifies whether any non-negativity constraints are placed on variance terms in the Method of Moments estimator for $G()$. We recommend keeping this at its default.
--   `MoM` (default `MoM = 1`) specifies the type of Method of Moments estimator for $G()$. `MoM = 2` saves all random effects for the covariance matrix calculation, providing more guaranteed statistical performance at the cost of computational burden. Concurrent models can only use `MoM = 1`.
+- `silent` (default `FALSE`) controls whether `fui()` outputs the status of the code at each step.
+- `nknots_min` (default is $L/2$) sets the number of knots for smoothing.
+- `smooth_method` (default `"GCV.Cp"`) sets the method for tuning the smoothing hyperparameter (see `mgcv` package for more information). Options are `GCV` and `GCV.Cp` and `REML`.
+- `splines` (default `"tp"`) controls the type of spline. See the `smooth.terms` page from the `mgcv` package for more information. Options include `"tp"`, `"ts"`, `"cr"`, `"cs"` `"te"`, `"ds"`, `"bs"`, `"gp"`, etc.
+- `design_mat` (default `FALSE`) specifies whether the design matrix is returned.
+- `residuals` (default `FALSE`) specifies whether the residuals of the univariate GLMM fits are returned.
+- `G_return` (default `FALSE`) specifies whether the covariance matrices $G()$ are returned. See [Cui et al. (2022)](https://doi.org/10.1080/10618600.2021.1950006) for more information.
+- `caic` (default `FALSE`) specifies whether the conditional AIC model fit criteria are returned alongside `AIC` and `BIC`. Conditional AIC is calculated with [cAIC4](https://cran.r-project.org/package=cAIC4).
+- `REs` (default `FALSE`) specifies whether the BLUP random effect estimates from the univariate GLMM fits are returned. These estimates are directly taken from the output of `lmer()` and `glmer()`.
+- `non_neg` (default `non_nef = 0`) specifies whether any non-negativity constraints are placed on variance terms in the Method of Moments estimator for $G()$. We recommend keeping this at its default.
+- `MoM` (default `MoM = 1`) specifies the type of Method of Moments estimator for $G()$. `MoM = 2` saves all random effects for the covariance matrix calculation, providing more guaranteed statistical performance at the cost of computational burden. Concurrent models can only use `MoM = 1`.
 
 ### Additional `plot_fui()` arguments
 
--   `num_row` specifies the number of rows the plots will be displayed on. Defaults to $p/2$
--   `align_x` aligns the plot to a certain point on the functional domain and sets this as \`\`0.'' This is particularly useful if time is the functional domain. Defaults to 0.
--   `x_rescale` rescales the x-axis of plots which is especially useful if time is the functional domain and one wishes to, for example, account for the sampling rate. Defaults to 1.
--   `title_names` Allows one to change the titles of the plots. Takes in a vector of strings. Defaults to NULL which uses the variable names in the dataframe for titles.
--   `y_val_lim` is a positive scalar that extends the y-axis by a factor for visual purposes. Defaults to $1.10$. Typically does not require adjustment.
--   `ylim` takes in a $2 \times 1$ vector that specifies limits of the y-axis in plots.
--   `y_scal_orig` a positive scalar that determines how much to reduce the length of the y-axis on the bottom. Typically does not require adjustment. Defaults to 0.05.
--   `xlab` takes in a string for the x-axis title (i.e., the functional domain). Defaults to \`\`Time (s)''
+- `num_row` specifies the number of rows the plots will be displayed on. Defaults to $p/2$
+- `align_x` aligns the plot to a certain point on the functional domain and sets this as \`\`0.'' This is particularly useful if time is the functional domain. Defaults to 0.
+- `x_rescale` rescales the x-axis of plots which is especially useful if time is the functional domain and one wishes to, for example, account for the sampling rate. Defaults to 1.
+- `title_names` Allows one to change the titles of the plots. Takes in a vector of strings. Defaults to NULL which uses the variable names in the dataframe for titles.
+- `y_val_lim` is a positive scalar that extends the y-axis by a factor for visual purposes. Defaults to $1.10$. Typically does not require adjustment.
+- `ylim` takes in a $2 \times 1$ vector that specifies limits of the y-axis in plots.
+- `y_scal_orig` a positive scalar that determines how much to reduce the length of the y-axis on the bottom. Typically does not require adjustment. Defaults to 0.05.
+- `xlab` takes in a string for the x-axis title (i.e., the functional domain). Defaults to \`\`Time (s)''
 
 ## Troubleshooting
 
